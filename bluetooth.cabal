@@ -1,0 +1,39 @@
+name:                bluetooth
+-- The package version. See the Haskell package versioning policy (PVP)
+-- for standards guiding when and how versions should be incremented.
+-- http://www.haskell.org/haskellwiki/Package_versioning_policy
+-- PVP summary:      +-+------- breaking API changes
+--                   | | +----- non-breaking API additions
+--                   | | | +--- code changes with no API change
+version:             0.1.0.0
+synopsis:            Haskell bindings to OS-specific Bluetooth libraries.
+-- description:         
+homepage:            https://github.com/RyanGlScott/bluetooth
+license:             BSD3
+license-file:        LICENSE
+author:              Ryan Scott
+maintainer:          ryan.gl.scott@ku.edu
+-- copyright:           
+category:            Network
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.8
+
+library
+  exposed-modules:     Network.Bluetooth
+  other-modules:       Network.Bluetooth.Utils
+  if os(linux)
+    other-modules:     Network.Bluetooth.Linux
+                       Network.Bluetooth.Linux.Internal
+  build-depends:       base >= 3 && < 5
+                     , network
+  build-tools:         c2hs
+--  c-sources:           cbits/wat.c
+--  default-language:    Haskell2010
+  if os(linux)
+    extra-libraries:   bluetooth
+  ghc-options:         -Wall
+  hs-source-dirs:      src
+--  include-dirs:        include
+--  includes:            wat.h
+--  install-includes:    wat.h
