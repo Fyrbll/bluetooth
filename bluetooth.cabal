@@ -16,7 +16,7 @@ maintainer:          ryan.gl.scott@ku.edu
 -- copyright:           
 category:            Network
 build-type:          Simple
-extra-source-files:  README.md
+extra-source-files:  README.md, cbits, include
 cabal-version:       >=1.8
 
 library
@@ -28,12 +28,12 @@ library
   build-depends:       base >= 3 && < 5
                      , network
   build-tools:         c2hs
---  c-sources:           cbits/wat.c
+  c-sources:           cbits/wr_sdp_lib.c
 --  default-language:    Haskell2010
   if os(linux)
     extra-libraries:   bluetooth
   ghc-options:         -Wall
   hs-source-dirs:      src
---  include-dirs:        include
---  includes:            wat.h
---  install-includes:    wat.h
+  include-dirs:        include
+  includes:            wr_sdp_lib.h
+  install-includes:    wr_sdp_lib.h

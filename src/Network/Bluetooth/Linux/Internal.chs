@@ -1,14 +1,11 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Network.Bluetooth.Linux.Internal where
 
-import Control.Applicative
+import Data.Word
 
-import Data.Ix
-
+import Foreign.C.String
 import Foreign.C.Types
-import Foreign.Marshal.Array
 import Foreign.Ptr
-import Foreign.Storable
 
 import Network.Bluetooth.Utils
 
@@ -17,67 +14,91 @@ import Network.Bluetooth.Utils
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
 #include <sys/socket.h>
+#include "wr_sdp_lib.h"
 
-{#enum define SdpUUIDType
-  { SDP_UUID16  as SdpUUID16
-  , SDP_UUID32  as SdpUUID32
-  , SDP_UUID128 as SdpUUID128
-  } deriving (Eq, Ord, Bounded, Show, Read, Ix) #}
-
-type CUInt8   = {#type uint8_t #}
-type CUInt16  = {#type uint16_t #}
-type CUInt32  = {#type uint32_t #}
--- type CUInt128 = {#type uint128_t #}
-
-data CUInt128 = CUInt128 CUInt8 CUInt8 CUInt8 CUInt8
-                         CUInt8 CUInt8 CUInt8 CUInt8
-                         CUInt8 CUInt8 CUInt8 CUInt8
-                         CUInt8 CUInt8 CUInt8 CUInt8
-
-data UUID = UUID16  CUInt16
-          | UUID32  CUInt32
-          | UUID128 CUInt128
-
-instance Storable CUInt128 where
-  sizeOf _ = {#sizeof uint128_t #}
-  alignment _ = {#alignof uint128_t #}
-  peek ptr' = do
-    arr <- {#get uint128_t.data #} ptr'
-    [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p] <- peekArray 16 arr
-    return $ CUInt128 a b c d e f g h i j k l m n o p
-  poke ptr' (CUInt128 a b c d e f g h i j k l m n o p) =
-    withArray [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p] $ \ arr ->
-      {#set uint128_t.data #} ptr' arr
-
-instance Storable UUID where
-  sizeOf _ = {#sizeof uuid_t #}
-  alignment _ = {#alignof uuid_t #}
-  peek p = do
-    t <- {#get uuid_t.type #} p
-    case cToEnum t of
-         SdpUUID16  -> mkUUID UUID16  {#get uuid_t.value.uuid16 #}
-         SdpUUID32  -> mkUUID UUID32  {#get uuid_t.value.uuid32 #}
-         SdpUUID128 -> UUID128 <$> peekByteOff p {#offsetof uuid_t.value.uuid128 #}
-    where mkUUID con get = con <$> fromIntegral <$> get p
-  poke p (UUID16 i) = do
-    {#set uuid_t.type #} p $ cFromEnum SdpUUID16
-    {#set uuid_t.value.uuid16 #} p $ fromIntegral i
-  poke p (UUID32 i) = do
-    {#set uuid_t.type #} p $ cFromEnum SdpUUID32
-    {#set uuid_t.value.uuid32 #} p $ fromIntegral i
-  poke p (UUID128 i) = do
-    {#set uuid_t.type #} p $ cFromEnum SdpUUID128
-    pokeByteOff p {#offsetof uuid_t.value.uuid128 #} i
-
-{#pointer *uuid_t as UUIDPtr -> UUID #}
-{#pointer *uint32_t as CUInt32Ptr -> CUInt32 #}
+{#pointer *uuid_t as UUIDPtr newtype #}
+{#pointer *uint32_t as CUInt32Ptr newtype #}
+{#pointer *sdp_record_t as SDPRecordPtr newtype #}
+{#pointer *sdp_list_t as SDPListPtr newtype #}
+{#pointer *sdp_data_t as SDPDataPtr newtype #}
+{#pointer *bdaddr_t as BDAddrPtr newtype #}
+{#pointer *sdp_session_t as SDPSessionPtr newtype #}
+{#pointer sdp_free_func_t as SDPFreeFuncPtr newtype #}
 
 {#fun unsafe sdp_uuid128_create as c_sdp_uuid128_create
   {         `UUIDPtr'
   , castPtr `Ptr a'
-  } -> `Ptr UUID' id #}
--- 
--- {#fun unsafe sdp_set_service_id as c_sdp_set_service_id
---   { `SDPRecord' -- sdp_record_t *rec
---   
---   } -> `()'#}
+  }      -> `UUIDPtr' id #}
+
+{#fun unsafe wr_sdp_set_service_id as c_sdp_set_service_id
+  {    `SDPRecordPtr' id
+  ,    `UUIDPtr'
+  } -> `()' #}
+
+{#fun unsafe sdp_uuid2strn as c_sdp_uuid2strn
+  {    `UUIDPtr'
+  ,    `String'& peekCStringLenIntConv*
+  } -> `Int' #}
+
+{#fun unsafe sdp_uuid16_create as c_sdp_uuid16_create
+  {    `UUIDPtr'
+  ,    `Word16'
+  } -> `UUIDPtr' #}
+
+{#fun unsafe sdp_list_append as c_sdp_list_append
+  {         `SDPListPtr'
+  , castPtr `Ptr a' id
+  }      -> `SDPListPtr' #}
+
+{#fun unsafe sdp_set_service_classes as c_sdp_set_service_classes
+  {    `SDPRecordPtr' id
+  ,    `SDPListPtr' id
+  } -> `Int' #}
+
+{#fun unsafe sdp_set_profile_descs as c_sdp_set_profile_descs
+  {    `SDPRecordPtr' id
+  ,    `SDPListPtr'
+  } -> `Int' #}
+
+{#fun unsafe sdp_set_browse_groups as c_sdp_set_browse_groups
+  {    `SDPRecordPtr' id
+  ,    `SDPListPtr' id
+  } -> `Int' #}
+
+{#fun unsafe sdp_data_alloc as c_sdp_data_alloc
+  {         `Word8'
+  , castPtr `Ptr a'
+  }      -> `SDPDataPtr' #}
+
+{#fun unsafe sdp_set_access_protos as c_sdp_set_access_protos
+  {    `SDPRecordPtr' id
+  ,    `SDPListPtr'
+  } -> `Int' #}
+
+{#fun unsafe sdp_set_info_attr as c_sdp_set_info_attr
+  {    `SDPRecordPtr' id
+  ,    `String'
+  ,    `String'
+  ,    `String'
+  } -> `()' #}
+
+{#fun unsafe sdp_connect as c_sdp_connect
+  {    `BDAddrPtr'
+  ,    `BDAddrPtr'
+  ,    `Word32'
+  } -> `SDPSessionPtr' #}
+
+{#fun unsafe sdp_record_register as c_sdp_record_register
+  {    `SDPSessionPtr' id
+  ,    `SDPRecordPtr' id
+  ,    `Word8'
+  } -> `Int' #}
+
+{#fun unsafe sdp_data_free as c_sdp_data_free
+  {    `SDPDataPtr' id
+  } -> `()' #}
+
+{#fun unsafe sdp_list_free as c_sdp_list_free
+  {    `SDPListPtr' id
+  ,    `SDPFreeFuncPtr' id
+  } -> `()' #}
