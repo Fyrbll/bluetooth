@@ -1,13 +1,13 @@
 # `bluetooth`
 
-This library abstracts low-level C Bluetooth utilities on each of the [Tier 1](https://ghc.haskell.org/trac/ghc/wiki/Platforms#Tier1platforms) GHC platforms. This is currently a work in progress, so do not expect anything to work yet.
+This library abstracts low-level C Bluetooth utilities on each of the [Tier 1](https://ghc.haskell.org/trac/ghc/wiki/Platforms#Tier1platforms) GHC platforms, similar to Java's [BlueCove](https://code.google.com/p/bluecove/) and Python's [PyBluez](https://code.google.com/p/pybluez/). This is currently a work in progress, so do not expect anything to work yet.
 
 ## Checklist
 - [ ] Windows x86_64 ([Winsock](http://msdn.microsoft.com/en-us/library/ms740673.aspx))<sup>1</sup>
 
   - [ ] Port the [Winsock examples](http://msdn.microsoft.com/en-us/library/windows/desktop/ms737889%28v=vs.85%29.aspx)
 
-- [ ] OS X ([API](https://developer.apple.com/library/mac/documentation/DeviceDrivers/Conceptual/Bluetooth/BT_Intro/BT_Intro.html))<sup>2</sup>
+- [ ] OS X ([IOBluetooth](https://developer.apple.com/library/mac/navigation/#section=Frameworks&topic=IOBluetooth))<sup>2</sup>
 
   - [ ] Port each of the [OSX Bluetooth examples](http://ryanglscott.github.io/Bluetooth.zip)
 
