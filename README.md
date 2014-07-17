@@ -27,6 +27,24 @@ This library abstracts low-level C Bluetooth utilities on each of the [Tier 1](h
 
 - [ ] FreeBSD ([`netgraph`](http://www.freebsd.org/cgi/man.cgi?query=netgraph&sektion=4))
 
+## Prerequisites
+Aside from having a Bluetooth-enabled computer, you must have some software installed before installing the `bluetooth` package.
+
+### Linux
+You need to have the BlueZ development libraries installed.
+
+#### Debian/Ubuntu
+```bash
+apt-get install libbluetooth1-dev bluez-utils
+```
+
+#### Fedora
+```bash
+yum install bluez-libs-devel
+```
+
+Alternatively, you can install from [source](http://www.bluez.org/download/).
+
 ---
 <sup>1</sup> Many of the Winsock headers (e.g., `ws2bth2.h`) appear to be available in [MinGW-w64](http://mingw-w64.sourceforge.net/) but not [MinGW](http://www.mingw.org/). Although MinGW-w64 supports both 32- and 64-bit Windows, only 64-bit Windows GHC is packaged with MinGW-w64 at the moment, so the `bluetooth` package does not support 32-bit Windows.
 
