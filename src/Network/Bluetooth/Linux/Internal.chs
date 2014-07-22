@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE EmptyDataDecls, ForeignFunctionInterface #-}
 module Network.Bluetooth.Linux.Internal where
 
 import Data.Ix
@@ -19,7 +19,7 @@ import Network.Bluetooth.Utils
 #include "wr_sdp.h"
 #include "wr_sdp_lib.h"
 
-type CUInt8  = {#type uint8_t  #}
+type CUInt8  = {#type uint8_t #}
 type CUInt32 = {#type uint32_t #}
 
 {#enum define ProtocolUUID {
@@ -44,14 +44,22 @@ type CUInt32 = {#type uint32_t #}
     SDP_RETRY_IF_BUSY as SDPRetryIfBusy
   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
-{#pointer *uuid_t as UUIDPtr newtype #}
-{#pointer *sdp_profile_desc_t as SDPProfileDescPtr newtype #}
-{#pointer *sdp_record_t as SDPRecordPtr newtype #}
-{#pointer *sdp_list_t as SDPListPtr newtype #}
-{#pointer *sdp_data_t as SDPDataPtr newtype #}
-{#pointer *bdaddr_t as BDAddrPtr newtype #}
-{#pointer *sdp_session_t as SDPSessionPtr newtype #}
-{#pointer sdp_free_func_t as SDPFreeFuncPtr newtype #}
+data C_UUID
+data C_SDPProfileDesc
+data C_SDPRecord
+data C_SDPList
+data C_SDPData
+data C_SDPSession
+
+{#pointer *uuid_t             as UUIDPtr           -> C_UUID #}
+{#pointer *sdp_profile_desc_t as SDPProfileDescPtr -> C_SDPProfileDesc #}
+{#pointer *sdp_record_t       as SDPRecordPtr      -> C_SDPRecord #}
+{#pointer *sdp_list_t         as SDPListPtr        -> C_SDPList #}
+{#pointer *sdp_data_t         as SDPDataPtr        -> C_SDPData #}
+{#pointer *sdp_session_t      as SDPSessionPtr     -> C_SDPSession #}
+
+{#pointer *bdaddr_t       as BDAddrPtr     newtype #}
+{#pointer sdp_free_func_t as SDPFreeFunPtr newtype #}
 
 {#fun unsafe sdp_uuid128_create as c_sdp_uuid128_create
   {         `UUIDPtr'
@@ -63,7 +71,7 @@ type CUInt32 = {#type uint32_t #}
   } -> `UUIDPtr' #}
 
 {#fun unsafe wr_sdp_set_service_id as c_sdp_set_service_id
-  {    `SDPRecordPtr' id
+  {    `SDPRecordPtr'
   ,    `UUIDPtr'
   } -> `()' #}
 
@@ -79,22 +87,22 @@ type CUInt32 = {#type uint32_t #}
 
 {#fun unsafe sdp_list_append as c_sdp_list_append
   {         `SDPListPtr'
-  , castPtr `Ptr a' id
+  , castPtr `Ptr a'
   }      -> `SDPListPtr' #}
 
 {#fun unsafe sdp_set_service_classes as c_sdp_set_service_classes
-  {    `SDPRecordPtr' id
-  ,    `SDPListPtr' id
+  {    `SDPRecordPtr'
+  ,    `SDPListPtr'
   } -> `Int' #}
 
 {#fun unsafe sdp_set_profile_descs as c_sdp_set_profile_descs
-  {    `SDPRecordPtr' id
+  {    `SDPRecordPtr'
   ,    `SDPListPtr'
   } -> `Int' #}
 
 {#fun unsafe sdp_set_browse_groups as c_sdp_set_browse_groups
-  {    `SDPRecordPtr' id
-  ,    `SDPListPtr' id
+  {    `SDPRecordPtr'
+  ,    `SDPListPtr'
   } -> `Int' #}
 
 {#fun unsafe sdp_data_alloc as c_sdp_data_alloc
@@ -103,12 +111,12 @@ type CUInt32 = {#type uint32_t #}
   }      -> `SDPDataPtr' #}
 
 {#fun unsafe sdp_set_access_protos as c_sdp_set_access_protos
-  {    `SDPRecordPtr' id
+  {    `SDPRecordPtr'
   ,    `SDPListPtr'
   } -> `Int' #}
 
 {#fun unsafe sdp_set_info_attr as c_sdp_set_info_attr
-  {    `SDPRecordPtr' id
+  {    `SDPRecordPtr'
   ,    `String'
   ,    `String'
   ,    `String'
@@ -121,18 +129,18 @@ type CUInt32 = {#type uint32_t #}
   } -> `SDPSessionPtr' #}
 
 {#fun unsafe sdp_record_register as c_sdp_record_register
-  {    `SDPSessionPtr' id
-  ,    `SDPRecordPtr' id
+  {    `SDPSessionPtr'
+  ,    `SDPRecordPtr'
   ,    `Word8'
   } -> `Int' #}
 
 {#fun unsafe sdp_data_free as c_sdp_data_free
-  {    `SDPDataPtr' id
+  {    `SDPDataPtr'
   } -> `()' #}
 
 {#fun unsafe sdp_list_free as c_sdp_list_free
-  {    `SDPListPtr' id
-  ,    `SDPFreeFuncPtr' id
+  {    `SDPListPtr'
+  ,    `SDPFreeFunPtr'
   } -> `()' #}
 
 {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BDAddrPtr' #}

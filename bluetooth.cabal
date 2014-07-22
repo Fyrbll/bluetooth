@@ -37,6 +37,7 @@ library
   if os(linux)
     extra-libraries:   bluetooth
   ghc-options:         -Wall -threaded
+  cc-options:          -Wall
   hs-source-dirs:      src
   include-dirs:        include
   includes:            wr_sdp_lib.h

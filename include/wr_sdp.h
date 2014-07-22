@@ -3,6 +3,6 @@
 
 #include <bluetooth/sdp.h>
 
-uuid_t *wr_sdp_profile_desc_get_uuid(const sdp_profile_desc_t *profile);
+uuid_t *wr_sdp_profile_desc_get_uuid(sdp_profile_desc_t *profile);
 
 #endif
