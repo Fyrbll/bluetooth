@@ -35,7 +35,7 @@ You need to have the BlueZ development libraries installed.
 
 #### Debian/Ubuntu
 ```bash
-apt-get install libbluetooth1-dev bluez-utils
+apt-get install bluez libbluetooth-dev
 ```
 
 #### Fedora
@@ -48,4 +48,4 @@ Alternatively, you can install from [source](http://www.bluez.org/download/).
 ---
 <sup>1</sup> Many of the Winsock headers (e.g., `ws2bth2.h`) appear to be available in [MinGW-w64](http://mingw-w64.sourceforge.net/) but not [MinGW](http://www.mingw.org/). Although MinGW-w64 supports both 32- and 64-bit Windows, only 64-bit Windows GHC is packaged with MinGW-w64 at the moment, so the `bluetooth` package does not support 32-bit Windows.
 
-<sup>2</sup>I do not own a Mac, so I am unable to test OS X at the moment.
+<sup>2</sup> I do not own a Mac, so I am unable to test OS X at the moment.
