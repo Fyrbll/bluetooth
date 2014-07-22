@@ -77,12 +77,11 @@ registerSDPService uuid info rfcommChannel = do
         throwErrnoIfMinus1_ "sdp_record_register" $
           c_sdp_record_register session record 0
         
-        let sffpnfp = SDPFreeFunPtr nullFunPtr
         c_sdp_data_free channel
-        c_sdp_list_free l2capList sffpnfp
-        c_sdp_list_free rfcommList sffpnfp
-        c_sdp_list_free rootList sffpnfp
-        c_sdp_list_free accessProtoList sffpnfp
-        c_sdp_list_free svcClassList sffpnfp
-        c_sdp_list_free profileList sffpnfp
+        c_sdp_list_free l2capList nullFunPtr
+        c_sdp_list_free rfcommList nullFunPtr
+        c_sdp_list_free rootList nullFunPtr
+        c_sdp_list_free accessProtoList nullFunPtr
+        c_sdp_list_free svcClassList nullFunPtr
+        c_sdp_list_free profileList nullFunPtr
         return session

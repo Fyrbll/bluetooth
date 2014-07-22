@@ -19,8 +19,9 @@ import Network.Bluetooth.Utils
 #include "wr_sdp.h"
 #include "wr_sdp_lib.h"
 
-type CUInt8  = {#type uint8_t #}
-type CUInt32 = {#type uint32_t #}
+type CUInt8  =       {#type uint8_t #}
+type CUInt32 =       {#type uint32_t #}
+type SDPFreeFunPtr = {#type sdp_free_func_t #}
 
 {#enum define ProtocolUUID {
     RFCOMM_UUID as RFCOMM_UUID
@@ -57,9 +58,7 @@ data C_SDPSession
 {#pointer *sdp_list_t         as SDPListPtr        -> C_SDPList #}
 {#pointer *sdp_data_t         as SDPDataPtr        -> C_SDPData #}
 {#pointer *sdp_session_t      as SDPSessionPtr     -> C_SDPSession #}
-
 {#pointer *bdaddr_t       as BDAddrPtr     newtype #}
-{#pointer sdp_free_func_t as SDPFreeFunPtr newtype #}
 
 {#fun unsafe sdp_uuid128_create as c_sdp_uuid128_create
   {         `UUIDPtr'
@@ -140,7 +139,7 @@ data C_SDPSession
 
 {#fun unsafe sdp_list_free as c_sdp_list_free
   {    `SDPListPtr'
-  ,    `SDPFreeFunPtr'
+  , id `SDPFreeFunPtr'
   } -> `()' #}
 
 {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BDAddrPtr' #}
