@@ -89,7 +89,7 @@ data C_SDPSession
   , castPtr `Ptr a'
   }      -> `SDPListPtr' #}
 
-{#fun unsafe sdp_set_service_classes as c_sdp_set_service_classes
+{#fun unsafe wr_sdp_set_service_classes as c_sdp_set_service_classes
   {    `SDPRecordPtr'
   ,    `SDPListPtr'
   } -> `Int' #}
@@ -99,7 +99,7 @@ data C_SDPSession
   ,    `SDPListPtr'
   } -> `Int' #}
 
-{#fun unsafe sdp_set_browse_groups as c_sdp_set_browse_groups
+{#fun unsafe wr_sdp_set_browse_groups as c_sdp_set_browse_groups
   {    `SDPRecordPtr'
   ,    `SDPListPtr'
   } -> `Int' #}
