@@ -37,27 +37,27 @@ registerSDPService uuid info rfcommChannel = do
 --             c_sdp_uuid2strn svcUuid str
 --             peekCString str >>= putStrLn
         
-        _ <- c_sdp_uuid16_create svcClassUuid $ cFromEnum SerialPortServiceClassID
+        _ <- c_sdp_uuid16_create svcClassUuid SerialPortServiceClassID
         svcClassList <- c_sdp_list_append nullPtr svcClassUuid
         throwErrnoIfNegative_ "sdp_set_service_classes" $
           c_sdp_set_service_classes record svcClassList
         
-        _ <- c_sdp_uuid16_create (c_sdp_profile_desc_get_uuid profile) $ cFromEnum SerialPortProfileID
+        _ <- c_sdp_uuid16_create (c_sdp_profile_desc_get_uuid profile) SerialPortProfileID
         {#set sdp_profile_desc_t.version #} profile 0x0100
         profileList <- c_sdp_list_append nullPtr profile
         throwErrnoIfNegative_ "sdp_set_profile_descs" $
           c_sdp_set_profile_descs record profileList
         
-        _ <- c_sdp_uuid16_create rootUuid $ cFromEnum PublicBrowseGroup
+        _ <- c_sdp_uuid16_create rootUuid PublicBrowseGroup
         rootList <- c_sdp_list_append nullPtr rootUuid
         throwErrnoIfNegative_ "sdp_set_browse_groups" $
           c_sdp_set_browse_groups record rootList
         
-        _ <- c_sdp_uuid16_create l2capUuid $ cFromEnum L2CAP_UUID
+        _ <- c_sdp_uuid16_create l2capUuid L2CAP_UUID
         l2capList <- c_sdp_list_append nullPtr rootUuid
         protoList <- c_sdp_list_append nullPtr l2capList
         
-        _ <- c_sdp_uuid16_create rfcommUuid $ cFromEnum RFCOMM_UUID
+        _ <- c_sdp_uuid16_create rfcommUuid RFCOMM_UUID
         channel <- with (fromIntegral rfcommChannel :: CUInt8) $
           c_sdp_data_alloc (cFromEnum SDPCUInt8)
         rfcommList <- c_sdp_list_append nullPtr rfcommUuid
@@ -73,7 +73,7 @@ registerSDPService uuid info rfcommChannel = do
              SDPNoInfo               -> return ()
         
         session <- throwErrnoIfNull "sdp_connect" $
-          c_sdp_connect c_bdaddr_any c_bdaddr_local $ cFromEnum SDPRetryIfBusy 
+          c_sdp_connect c_bdaddr_any c_bdaddr_local SDPRetryIfBusy 
         throwErrnoIfMinus1_ "sdp_record_register" $
           c_sdp_record_register session record 0
         
@@ -85,3 +85,6 @@ registerSDPService uuid info rfcommChannel = do
         c_sdp_list_free svcClassList nullFunPtr
         c_sdp_list_free profileList nullFunPtr
         return session
+
+closeSDPService :: SDPSessionPtr -> IO ()
+closeSDPService = throwErrnoIfMinus1_ "sdp_close" . c_sdp_close

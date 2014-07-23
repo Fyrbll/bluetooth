@@ -9,6 +9,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 
 import Network.Bluetooth.Utils
+import Network.Socket
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
@@ -43,6 +44,11 @@ type SDPFreeFunPtr = {#type sdp_free_func_t #}
 
 {#enum define SDPConnectFlag {
     SDP_RETRY_IF_BUSY as SDPRetryIfBusy
+  } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
+
+{#enum define BluetoothProtocol {
+    BTPROTO_L2CAP  as L2CAP
+  , BTPROTO_RFCOMM as RFCOMM
   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
 data C_UUID
@@ -80,9 +86,10 @@ data C_SDPSession
   } -> `Int' #}
 
 {#fun unsafe sdp_uuid16_create as c_sdp_uuid16_create
-  {    `UUIDPtr'
-  ,    `Word16'
-  } -> `UUIDPtr' #}
+  `Enum e' =>
+  {              `UUIDPtr'
+  , cFromEnum    `e'
+  }           -> `UUIDPtr' #}
 
 {#fun unsafe sdp_list_append as c_sdp_list_append
   {         `SDPListPtr'
@@ -122,10 +129,11 @@ data C_SDPSession
   } -> `()' #}
 
 {#fun unsafe sdp_connect as c_sdp_connect
-  {    `BDAddrPtr'
-  ,    `BDAddrPtr'
-  ,    `Word32'
-  } -> `SDPSessionPtr' #}
+  `Enum e' =>
+  {           `BDAddrPtr'
+  ,           `BDAddrPtr'
+  , cFromEnum `e'
+  }        -> `SDPSessionPtr' #}
 
 {#fun unsafe sdp_record_register as c_sdp_record_register
   {    `SDPSessionPtr'
@@ -141,6 +149,16 @@ data C_SDPSession
   {    `SDPListPtr'
   , id `SDPFreeFunPtr'
   } -> `()' #}
+
+{#fun unsafe sdp_close as c_sdp_close
+  {    `SDPSessionPtr'
+  } -> `Int' #}
+
+{#fun unsafe socket as c_socket
+  { packFamily     `Family'
+  , packSocketType `SocketType'
+  ,                `BluetoothProtocol'
+  }             -> `CInt' id #}
 
 {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BDAddrPtr' #}
 {#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BDAddrPtr' #}

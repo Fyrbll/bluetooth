@@ -27,8 +27,11 @@ library
     other-modules:     Network.Bluetooth.Linux
                        Network.Bluetooth.Linux.Internal
                        Network.Bluetooth.Linux.SDP
+                       Network.Bluetooth.Linux.Socket
+                       Network.Bluetooth.Linux.Types
   build-depends:       base >= 3 && < 5
                      , network
+                     , network-info
                      , uuid
   build-tools:         c2hs
   c-sources:           cbits/wr_bluetooth.c
