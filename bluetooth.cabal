@@ -21,8 +21,8 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Network.Bluetooth
-  other-modules:       Network.Bluetooth.Utils
                        Network.Bluetooth.UUID
+  other-modules:       Network.Bluetooth.Utils
   if os(linux)
     other-modules:     Network.Bluetooth.Linux
                        Network.Bluetooth.Linux.Internal
