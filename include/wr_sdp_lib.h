@@ -6,6 +6,4 @@
 
 void wr_sdp_set_service_id(sdp_record_t *rec, const uuid_t *uuid);
 
-
-
 #endif

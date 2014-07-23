@@ -22,6 +22,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Network.Bluetooth
   other-modules:       Network.Bluetooth.Utils
+                       Network.Bluetooth.UUID
   if os(linux)
     other-modules:     Network.Bluetooth.Linux
                        Network.Bluetooth.Linux.Internal
@@ -38,7 +39,24 @@ library
     extra-libraries:   bluetooth
   ghc-options:         -Wall -threaded
   cc-options:          -Wall
+  if impl(ghc >= 7.8)
+    cc-options:        -fPIC
   hs-source-dirs:      src
   include-dirs:        include
-  includes:            wr_sdp_lib.h
-  install-includes:    wr_sdp_lib.h
+  if os(linux)
+    includes:          bluetooth/bluetooth.h
+                     , bluetooth/rfcomm.h
+                     , bluetooth/sdp.h
+                     , bluetooth/sdp_lib.h
+                     , sys/socket.h
+                     , wr_bluetooth.h
+                     , wr_sdp.h
+                     , wr_sdp_lib.h
+    install-includes:  bluetooth/bluetooth.h
+                     , bluetooth/rfcomm.h
+                     , bluetooth/sdp.h
+                     , bluetooth/sdp_lib.h
+                     , sys/socket.h
+                     , wr_bluetooth.h
+                     , wr_sdp.h
+                     , wr_sdp_lib.h
