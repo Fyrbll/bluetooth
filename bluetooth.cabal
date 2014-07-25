@@ -30,6 +30,7 @@ library
                        Network.Bluetooth.Linux.Socket
                        Network.Bluetooth.Linux.Types
   build-depends:       base >= 3 && < 5
+                     , binary
                      , network
                      , network-info
                      , uuid

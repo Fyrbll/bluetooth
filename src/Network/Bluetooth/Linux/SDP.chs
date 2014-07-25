@@ -58,7 +58,7 @@ registerSDPService uuid info rfcommChannel = do
         protoList <- c_sdp_list_append nullPtr l2capList
         
         _ <- c_sdp_uuid16_create rfcommUuid RFCOMM_UUID
-        channel <- with (fromIntegral rfcommChannel :: CUInt8) $
+        channel <- with rfcommChannel $
           c_sdp_data_alloc (cFromEnum SDPCUInt8)
         rfcommList <- c_sdp_list_append nullPtr rfcommUuid
         _ <- c_sdp_list_append rfcommList channel

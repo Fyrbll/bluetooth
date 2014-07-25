@@ -2,16 +2,17 @@
 module Network.Bluetooth.Linux.Internal where
 
 import Data.Ix
-import Data.Word
 
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign.Ptr
 
+import Network.Bluetooth.Linux.Types
 import Network.Bluetooth.Utils
 import Network.Socket
 
 #include <bluetooth/bluetooth.h>
+#include <bluetooth/l2cap.h>
 #include <bluetooth/rfcomm.h>
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
@@ -20,8 +21,6 @@ import Network.Socket
 #include "wr_sdp.h"
 #include "wr_sdp_lib.h"
 
-type CUInt8  =       {#type uint8_t #}
-type CUInt32 =       {#type uint32_t #}
 type SDPFreeFunPtr = {#type sdp_free_func_t #}
 
 {#enum define ProtocolUUID {
@@ -57,6 +56,8 @@ data C_SDPRecord
 data C_SDPList
 data C_SDPData
 data C_SDPSession
+data C_SockAddrRFCOMM
+data C_SockAddrL2CAP
 
 {#pointer *uuid_t             as UUIDPtr           -> C_UUID #}
 {#pointer *sdp_profile_desc_t as SDPProfileDescPtr -> C_SDPProfileDesc #}
@@ -64,7 +65,13 @@ data C_SDPSession
 {#pointer *sdp_list_t         as SDPListPtr        -> C_SDPList #}
 {#pointer *sdp_data_t         as SDPDataPtr        -> C_SDPData #}
 {#pointer *sdp_session_t      as SDPSessionPtr     -> C_SDPSession #}
-{#pointer *bdaddr_t       as BDAddrPtr     newtype #}
+{#pointer *bdaddr_t           as BluetoothAddrPtr  -> BluetoothAddr #}
+{#pointer *sockaddr_rc        as SockAddrRFCOMMPtr    newtype #}
+{#pointer *sockaddr_l2        as SockAddrL2CAPPtr     newtype #}
+
+class SockAddrPtr a
+instance SockAddrPtr C_SockAddrRFCOMM
+instance SockAddrPtr C_SockAddrL2CAP
 
 {#fun unsafe sdp_uuid128_create as c_sdp_uuid128_create
   {         `UUIDPtr'
@@ -112,7 +119,7 @@ data C_SDPSession
   } -> `Int' #}
 
 {#fun unsafe sdp_data_alloc as c_sdp_data_alloc
-  {         `Word8'
+  {         `Int'
   , castPtr `Ptr a'
   }      -> `SDPDataPtr' #}
 
@@ -130,15 +137,15 @@ data C_SDPSession
 
 {#fun unsafe sdp_connect as c_sdp_connect
   `Enum e' =>
-  {           `BDAddrPtr'
-  ,           `BDAddrPtr'
+  {           `BluetoothAddrPtr'
+  ,           `BluetoothAddrPtr'
   , cFromEnum `e'
   }        -> `SDPSessionPtr' #}
 
 {#fun unsafe sdp_record_register as c_sdp_record_register
   {    `SDPSessionPtr'
   ,    `SDPRecordPtr'
-  ,    `Word8'
+  ,    `Int'
   } -> `Int' #}
 
 {#fun unsafe sdp_data_free as c_sdp_data_free
@@ -158,7 +165,14 @@ data C_SDPSession
   { packFamily     `Family'
   , packSocketType `SocketType'
   ,                `BluetoothProtocol'
-  }             -> `CInt' id #}
+  }             -> `Int' #}
 
-{#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BDAddrPtr' #}
-{#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BDAddrPtr' #}
+{#fun unsafe bind as c_bind
+  `SockAddrPtr p' =>
+  {         `Int'
+  , castPtr `Ptr p'
+  ,         `Int'
+  }      -> `Int' #}
+
+{#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
+{#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
