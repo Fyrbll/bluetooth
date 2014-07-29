@@ -23,44 +23,53 @@ library
   exposed-modules:     Network.Bluetooth
                        Network.Bluetooth.UUID
   other-modules:       Network.Bluetooth.Utils
+  if os(windows)
+    other-modules:
+  if os(darwin)
+    other-modules:
   if os(linux)
     other-modules:     Network.Bluetooth.Linux
                        Network.Bluetooth.Linux.Internal
                        Network.Bluetooth.Linux.SDP
                        Network.Bluetooth.Linux.Socket
                        Network.Bluetooth.Linux.Types
+  if os(freebsd)
+    other-modules:
   build-depends:       base >= 3 && < 5
                      , binary
                      , network
                      , network-info
                      , uuid
+  if os(windows)
+                       Win32
   build-tools:         c2hs
-  c-sources:           cbits/wr_bluetooth.c
-                     , cbits/wr_sdp.c
-                     , cbits/wr_sdp_lib.c
   default-language:    Haskell2010
-  if os(linux)
-    extra-libraries:   bluetooth
   ghc-options:         -Wall -threaded
   cc-options:          -Wall
   if impl(ghc >= 7.8)
     cc-options:        -fPIC
   hs-source-dirs:      src
   include-dirs:        include
+  if os(windows)
+    c-sources:
+  if os(darwin)
+    c-sources:
   if os(linux)
-    includes:          bluetooth/bluetooth.h
-                     , bluetooth/rfcomm.h
-                     , bluetooth/sdp.h
-                     , bluetooth/sdp_lib.h
-                     , sys/socket.h
-                     , wr_bluetooth.h
+    c-sources:         cbits/wr_bluetooth.c
+                     , cbits/wr_l2cap.c
+                     , cbits/wr_rfcomm.c
+                     , cbits/wr_sdp.c
+                     , cbits/wr_sdp_lib.c
+    pkgconfig-depends: bluez
+    includes:          wr_bluetooth.h
+                     , wr_l2cap.h
+                     , wr_rfcomm.h
                      , wr_sdp.h
                      , wr_sdp_lib.h
-    install-includes:  bluetooth/bluetooth.h
-                     , bluetooth/rfcomm.h
-                     , bluetooth/sdp.h
-                     , bluetooth/sdp_lib.h
-                     , sys/socket.h
-                     , wr_bluetooth.h
+    install-includes:  wr_bluetooth.h
+                     , wr_l2cap.h
+                     , wr_rfcomm.h
                      , wr_sdp.h
                      , wr_sdp_lib.h
+  if os(freebsd)
+    extra-libraries:   bluetooth

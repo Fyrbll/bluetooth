@@ -18,6 +18,8 @@ import Network.Socket
 #include <bluetooth/sdp_lib.h>
 #include <sys/socket.h>
 #include "wr_bluetooth.h"
+#include "wr_l2cap.h"
+#include "wr_rfcomm.h"
 #include "wr_sdp.h"
 #include "wr_sdp_lib.h"
 
@@ -66,8 +68,8 @@ data C_SockAddrL2CAP
 {#pointer *sdp_data_t         as SDPDataPtr        -> C_SDPData #}
 {#pointer *sdp_session_t      as SDPSessionPtr     -> C_SDPSession #}
 {#pointer *bdaddr_t           as BluetoothAddrPtr  -> BluetoothAddr #}
-{#pointer *sockaddr_rc        as SockAddrRFCOMMPtr    newtype #}
-{#pointer *sockaddr_l2        as SockAddrL2CAPPtr     newtype #}
+{#pointer *sockaddr_rc_t      as SockAddrRFCOMMPtr -> C_SockAddrRFCOMM #}
+{#pointer *sockaddr_l2_t      as SockAddrL2CAPPtr  -> C_SockAddrL2CAP #}
 
 class SockAddrPtr a
 instance SockAddrPtr C_SockAddrRFCOMM
@@ -161,6 +163,16 @@ instance SockAddrPtr C_SockAddrL2CAP
   {    `SDPSessionPtr'
   } -> `Int' #}
 
+{#fun unsafe wr_sockaddr_l2_set_l2_bdaddr as c_sockaddr_l2_set_l2_bdaddr
+  {        `SockAddrL2CAPPtr'
+  , with'* `BluetoothAddr'
+  } -> `()' #}
+
+{#fun unsafe wr_sockaddr_rc_set_rc_bdaddr as c_sockaddr_rc_set_rc_bdaddr
+  {        `SockAddrRFCOMMPtr'
+  , with'* `BluetoothAddr'
+  } -> `()' #}
+
 {#fun unsafe socket as c_socket
   { packFamily     `Family'
   , packSocketType `SocketType'
@@ -174,5 +186,13 @@ instance SockAddrPtr C_SockAddrL2CAP
   ,         `Int'
   }      -> `Int' #}
 
+{#fun unsafe accept as c_accept
+  `SockAddrPtr p' =>
+  {         `Int'
+  , castPtr `Ptr p'
+  ,         `Ptr Int'
+  }      -> `Int' #}
+
 {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
 {#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
+{#fun pure wr_htobs as c_htobs { `Int' } -> `Int' #}
