@@ -1,12 +1,16 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Network.Bluetooth.Linux.Types (
+module Network.Bluetooth.Linux.Addr (
       BluetoothAddr
+    , BluetoothAddrArray
+    , asArray
+    , fromArray
     , fromWords
     , toWords
     ) where
 
 import           Control.Applicative
+import           Control.Monad
 
 import           Data.Binary
 
@@ -27,6 +31,16 @@ import qualified Text.ParserCombinators.ReadP as Rex
 newtype BluetoothAddr = BluetoothAddr MAC
   deriving (Eq, Ord, Bounded, Binary)
 
+type BluetoothAddrArray = Ptr {#type uint8_t #}
+
+asArray :: BluetoothAddr -> (BluetoothAddrArray -> IO a) -> IO a
+asArray (BluetoothAddr (MAC a b c d e f)) = withArray $ map fromIntegral [a,b,c,d,e,f]
+
+fromArray :: BluetoothAddrArray -> IO BluetoothAddr
+fromArray arr = do
+    [a,b,c,d,e,f] <- map fromIntegral <$> peekArray 6 arr
+    return . BluetoothAddr $ MAC a b c d e f
+
 fromWords :: Word8 -> Word8 -> Word8 -> Word8 -> Word8 -> Word8 -> BluetoothAddr
 fromWords a b c d e f = BluetoothAddr $ MAC a b c d e f
 
@@ -37,14 +51,10 @@ instance Show BluetoothAddr where
     show (BluetoothAddr macAddr) = show macAddr
 
 instance Storable BluetoothAddr where
-    sizeOf _ = {#sizeof bdaddr_t #}
-    alignment _ = {#alignof bdaddr_t #}
-    peek p = do
-        arr <- {#get bdaddr_t.b #} p
-        [a,b,c,d,e,f] <- map fromIntegral <$> peekArray 6 arr
-        return . BluetoothAddr $ MAC a b c d e f
-    poke p (BluetoothAddr (MAC a b c d e f)) =
-      withArray (map fromIntegral [a,b,c,d,e,f]) $ {#set bdaddr_t.b #} p
+    sizeOf = const {#sizeof bdaddr_t #}
+    alignment = const {#alignof bdaddr_t #}
+    peek = {#get bdaddr_t.b #} >=> fromArray
+    poke = flip asArray . {#set bdaddr_t.b #}
 
 -------------------------------------------------------------------------------
 -- The following instances come from the maccatcher package, licensed under the

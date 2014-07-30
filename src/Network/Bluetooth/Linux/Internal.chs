@@ -5,9 +5,10 @@ import Data.Ix
 
 import Foreign.C.String
 import Foreign.C.Types
+import Foreign.Marshal.Alloc
 import Foreign.Ptr
 
-import Network.Bluetooth.Linux.Types
+import Network.Bluetooth.Linux.Addr
 import Network.Bluetooth.Utils
 import Network.Socket
 
@@ -163,16 +164,6 @@ instance SockAddrPtr C_SockAddrL2CAP
   {    `SDPSessionPtr'
   } -> `Int' #}
 
-{#fun unsafe wr_sockaddr_l2_set_l2_bdaddr as c_sockaddr_l2_set_l2_bdaddr
-  {        `SockAddrL2CAPPtr'
-  , with'* `BluetoothAddr'
-  } -> `()' #}
-
-{#fun unsafe wr_sockaddr_rc_set_rc_bdaddr as c_sockaddr_rc_set_rc_bdaddr
-  {        `SockAddrRFCOMMPtr'
-  , with'* `BluetoothAddr'
-  } -> `()' #}
-
 {#fun unsafe socket as c_socket
   { packFamily     `Family'
   , packSocketType `SocketType'
@@ -190,7 +181,7 @@ instance SockAddrPtr C_SockAddrL2CAP
   `SockAddrPtr p' =>
   {         `Int'
   , castPtr `Ptr p'
-  ,         `Ptr Int'
+  , alloca- `Int'
   }      -> `Int' #}
 
 {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}

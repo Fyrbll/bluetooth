@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP, MagicHash #-}
 module Network.Bluetooth.Utils
   ( cToEnum
   , cFromEnum
@@ -6,15 +7,23 @@ module Network.Bluetooth.Utils
   , throwErrnoIfNegative
   , throwErrnoIfNegative_
   , with'
+  , byteSwap32
   ) where
 
-import Control.Monad
+import           Control.Monad
 
-import Foreign.C.Error
-import Foreign.C.String
-import Foreign.Marshal.Utils
-import Foreign.Ptr
-import Foreign.Storable
+import qualified Data.Word as W
+
+import           Foreign.C.Error
+import           Foreign.C.String
+import           Foreign.Marshal.Utils
+import           Foreign.Ptr
+import           Foreign.Storable
+
+#if __GLASGOW_HASKELL__ < 708
+import           GHC.Prim
+import           GHC.Word
+#endif
 
 cToEnum :: (Integral i, Enum e) => i -> e
 cToEnum = toEnum . fromIntegral
@@ -38,3 +47,10 @@ throwErrnoIfNegative_ s = void . throwErrnoIfNegative s
 --   See <https://github.com/haskell/c2hs/issues/93 this issue>.
 with' :: Storable a => a -> (Ptr a -> IO b) -> IO b
 with' = with
+
+byteSwap32 :: W.Word32 -> W.Word32
+#if __GLASGOW_HASKELL__ >= 708
+byteSwap32 = W.byteSwap32
+#else
+byteSwap32 (W32# w#) = W32# (narrow32Word# (byteSwap32# w#))
+#endif

@@ -1,7 +1,6 @@
 module Network.Bluetooth.Linux.SDP where
 
 import Data.UUID
-import Data.Word
 
 import Foreign.C.Error
 import Foreign.C.Types

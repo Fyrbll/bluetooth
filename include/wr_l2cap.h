@@ -6,6 +6,4 @@
 
 typedef struct sockaddr_l2 sockaddr_l2_t;
 
-void wr_sockaddr_l2_set_l2_bdaddr(sockaddr_l2_t *sa, bdaddr_t *ba);
-
 #endif
