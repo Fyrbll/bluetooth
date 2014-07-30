@@ -11,10 +11,16 @@ import Foreign.Ptr
 import Foreign.Storable
 
 import Network.Bluetooth.Linux.Internal
-import Network.Bluetooth.Types
 import Network.Bluetooth.Utils
 
 #include <bluetooth/sdp.h>
+
+data SDPInfo = SDPAttributes {
+                 serviceName  :: String
+               , description  :: String
+               , providerName :: String
+           } | SDPNoInfo
+           deriving (Read, Show)
 
 registerSDPService :: UUID -> SDPInfo -> Int -> IO SDPSessionPtr
 registerSDPService uuid info rfcommChannel = do

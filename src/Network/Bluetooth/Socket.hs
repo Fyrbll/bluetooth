@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 module Network.Bluetooth.Socket (
-#if     defined(mingw32_HOST_OS)
+#if   defined(mingw32_HOST_OS)
       module Network.Bluetooth.Windows.Socket
 #elif defined(darwin_HOST_OS)
       module Network.Bluetooth.OSX.Socket

@@ -22,6 +22,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Network.Bluetooth
                        Network.Bluetooth.Addr
+                       Network.Bluetooth.Internal
                        Network.Bluetooth.SDP
                        Network.Bluetooth.Socket
                        Network.Bluetooth.UUID

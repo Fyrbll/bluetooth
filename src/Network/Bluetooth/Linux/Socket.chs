@@ -1,9 +1,4 @@
-module Network.Bluetooth.Linux.Socket (
-      bluetoothSocket
-    , bluetoothBind
-    , bluetoothListen
-    , bluetoothAccept
-    ) where
+module Network.Bluetooth.Linux.Socket where
 
 import Control.Concurrent.MVar
 import Control.Monad

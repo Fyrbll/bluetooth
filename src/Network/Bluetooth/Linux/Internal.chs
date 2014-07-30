@@ -7,10 +7,13 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign.Marshal.Alloc
 import Foreign.Ptr
+import Foreign.Storable
 
 import Network.Bluetooth.Linux.Addr
 import Network.Bluetooth.Utils
 import Network.Socket
+
+import System.IO.Unsafe
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/l2cap.h>
@@ -62,13 +65,13 @@ data C_SDPSession
 data C_SockAddrRFCOMM
 data C_SockAddrL2CAP
 
+{#pointer *bdaddr_t           as BluetoothAddrPtr  -> BluetoothAddr #}
 {#pointer *uuid_t             as UUIDPtr           -> C_UUID #}
 {#pointer *sdp_profile_desc_t as SDPProfileDescPtr -> C_SDPProfileDesc #}
 {#pointer *sdp_record_t       as SDPRecordPtr      -> C_SDPRecord #}
 {#pointer *sdp_list_t         as SDPListPtr        -> C_SDPList #}
 {#pointer *sdp_data_t         as SDPDataPtr        -> C_SDPData #}
 {#pointer *sdp_session_t      as SDPSessionPtr     -> C_SDPSession #}
-{#pointer *bdaddr_t           as BluetoothAddrPtr  -> BluetoothAddr #}
 {#pointer *sockaddr_rc_t      as SockAddrRFCOMMPtr -> C_SockAddrRFCOMM #}
 {#pointer *sockaddr_l2_t      as SockAddrL2CAPPtr  -> C_SockAddrL2CAP #}
 
@@ -187,3 +190,9 @@ instance SockAddrPtr C_SockAddrL2CAP
 {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
 {#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
 {#fun pure wr_htobs as c_htobs { `Int' } -> `Int' #}
+
+anyAddr :: BluetoothAddr
+anyAddr = unsafePerformIO $ peek c_bdaddr_any
+
+localAddr :: BluetoothAddr
+localAddr = unsafePerformIO $ peek c_bdaddr_local

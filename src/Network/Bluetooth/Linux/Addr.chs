@@ -1,13 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Network.Bluetooth.Linux.Addr (
-      BluetoothAddr
-    , BluetoothAddrArray
-    , asArray
-    , fromArray
-    , fromWords
-    , toWords
-    ) where
+module Network.Bluetooth.Linux.Addr where
 
 import           Control.Applicative
 import           Control.Monad
@@ -45,7 +38,7 @@ fromWords :: Word8 -> Word8 -> Word8 -> Word8 -> Word8 -> Word8 -> BluetoothAddr
 fromWords a b c d e f = BluetoothAddr $ MAC a b c d e f
 
 toWords :: BluetoothAddr -> (Word8, Word8, Word8, Word8, Word8, Word8)
-toWords (BluetoothAddr (MAC a b c d e f)) = (a, b, c, d, e, f) 
+toWords (BluetoothAddr (MAC a b c d e f)) = (a, b, c, d, e, f)
 
 instance Show BluetoothAddr where
     show (BluetoothAddr macAddr) = show macAddr
