@@ -16,16 +16,16 @@ main = withSocketsDo $ do
     let port     = 3
         backlog  = 1
         uuid     = serialPortServiceClassUUID
-        settings = SDPAttributes "Roto-Rooter Data Router" "An experimental plumbing router" "Roto-Rooter"
+        settings = SDPAttributes "Roto-Rooter Data Router" "Roto-Rooter" "An experimental plumbing router"
         messLen  = 4096
     handshakeSock <- commentate "Calling socket" $
       bluetoothSocket RFCOMM
     commentate ("Calling bind on port " ++ show port) $
       bluetoothBind handshakeSock anyAddr port
-    service <- commentate ("Registering SDP service " ++ show uuid) $
-      registerSDPService uuid settings port
     commentate ("Calling listen with backlog " ++ show backlog) $
       bluetoothListen handshakeSock backlog
+    service <- commentate ("Registering SDP service " ++ show uuid) $
+      registerSDPService uuid settings port
     (connSock, connAddr) <- commentate "Calling accept" $
       bluetoothAccept handshakeSock
       

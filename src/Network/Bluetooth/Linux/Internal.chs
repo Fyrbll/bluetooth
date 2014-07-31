@@ -7,13 +7,10 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign.Marshal.Alloc
 import Foreign.Ptr
-import Foreign.Storable
 
 import Network.Bluetooth.Linux.Addr
 import Network.Bluetooth.Utils
 import Network.Socket
-
-import System.IO.Unsafe
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/l2cap.h>
@@ -100,9 +97,9 @@ instance SockAddrPtr C_SockAddrL2CAP
 
 {#fun unsafe sdp_uuid16_create as c_sdp_uuid16_create
   `Enum e' =>
-  {              `UUIDPtr'
-  , cFromEnum    `e'
-  }           -> `UUIDPtr' #}
+  {           `UUIDPtr'
+  , cFromEnum `e'
+  }        -> `UUIDPtr' #}
 
 {#fun unsafe sdp_list_append as c_sdp_list_append
   {         `SDPListPtr'
@@ -125,7 +122,7 @@ instance SockAddrPtr C_SockAddrL2CAP
   } -> `Int' #}
 
 {#fun unsafe sdp_data_alloc as c_sdp_data_alloc
-  {         `Int'
+  {         `SDPDataRep'
   , castPtr `Ptr a'
   }      -> `SDPDataPtr' #}
 
@@ -143,8 +140,8 @@ instance SockAddrPtr C_SockAddrL2CAP
 
 {#fun unsafe sdp_connect as c_sdp_connect
   `Enum e' =>
-  {           `BluetoothAddrPtr'
-  ,           `BluetoothAddrPtr'
+  { with'*    `BluetoothAddr'
+  , with'*    `BluetoothAddr'
   , cFromEnum `e'
   }        -> `SDPSessionPtr' #}
 
@@ -154,18 +151,14 @@ instance SockAddrPtr C_SockAddrL2CAP
   ,    `Int'
   } -> `Int' #}
 
-{#fun unsafe sdp_data_free as c_sdp_data_free
-  {    `SDPDataPtr'
-  } -> `()' #}
+{#fun unsafe sdp_data_free as c_sdp_data_free { `SDPDataPtr' } -> `()' #}
 
 {#fun unsafe sdp_list_free as c_sdp_list_free
   {    `SDPListPtr'
   , id `SDPFreeFunPtr'
   } -> `()' #}
 
-{#fun unsafe sdp_close as c_sdp_close
-  {    `SDPSessionPtr'
-  } -> `Int' #}
+{#fun unsafe sdp_close as c_sdp_close { `SDPSessionPtr' } -> `Int' #}
 
 {#fun unsafe socket as c_socket
   { packFamily     `Family'
@@ -187,12 +180,6 @@ instance SockAddrPtr C_SockAddrL2CAP
   , alloca- `Int'
   }      -> `Int' #}
 
-{#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
-{#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
+-- {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
+-- {#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
 {#fun pure wr_htobs as c_htobs { `Int' } -> `Int' #}
-
-anyAddr :: BluetoothAddr
-anyAddr = unsafePerformIO $ peek c_bdaddr_any
-
-localAddr :: BluetoothAddr
-localAddr = unsafePerformIO $ peek c_bdaddr_local

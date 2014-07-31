@@ -36,8 +36,8 @@ bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr port = do
              L2CAP  -> callBind {#sizeof sockaddr_l2_t #}
                                 {#set sockaddr_l2_t.l2_family #}
                                 ({#set sockaddr_l2_t.l2_bdaddr.b #} :: SockAddrL2CAPPtr -> BluetoothAddrArray -> IO ())
-                                {#set sockaddr_l2_t.l2_psm #} $
-                                c_htobs port
+                                {#set sockaddr_l2_t.l2_psm #}
+                                (c_htobs port)
              RFCOMM -> callBind {#sizeof sockaddr_rc_t #}
                                 {#set sockaddr_rc_t.rc_family #}
                                 ({#set sockaddr_rc_t.rc_bdaddr.b #} :: SockAddrRFCOMMPtr -> BluetoothAddrArray -> IO ())

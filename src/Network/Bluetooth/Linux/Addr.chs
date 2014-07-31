@@ -40,6 +40,12 @@ fromWords a b c d e f = BluetoothAddr $ MAC a b c d e f
 toWords :: BluetoothAddr -> (Word8, Word8, Word8, Word8, Word8, Word8)
 toWords (BluetoothAddr (MAC a b c d e f)) = (a, b, c, d, e, f)
 
+anyAddr :: BluetoothAddr
+anyAddr = fromWords 0 0 0 0 0 0
+
+localAddr :: BluetoothAddr
+localAddr = fromWords 0 0 0 0xFF 0xFF 0xFF
+
 instance Show BluetoothAddr where
     show (BluetoothAddr macAddr) = show macAddr
 

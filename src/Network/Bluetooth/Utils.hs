@@ -6,6 +6,7 @@ module Network.Bluetooth.Utils
   , peekCStringLenIntConv
   , throwErrnoIfNegative
   , throwErrnoIfNegative_
+  , throwErrnoIfNull_
   , with'
   , byteSwap32
   ) where
@@ -42,6 +43,9 @@ throwErrnoIfNegative = throwErrnoIf (< 0)
 
 throwErrnoIfNegative_ :: (Num a, Ord a) => String -> IO a -> IO ()
 throwErrnoIfNegative_ s = void . throwErrnoIfNegative s
+
+throwErrnoIfNull_ ::  String -> IO (Ptr a) -> IO ()
+throwErrnoIfNull_ s = void . throwErrnoIfNull s
 
 -- | Synonym for 'with' to avoid c2hs issues.
 --   See <https://github.com/haskell/c2hs/issues/93 this issue>.
