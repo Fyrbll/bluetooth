@@ -62,7 +62,7 @@ data C_SDPSession
 data C_SockAddrRFCOMM
 data C_SockAddrL2CAP
 
-{#pointer *bdaddr_t           as BluetoothAddrPtr  -> BluetoothAddr #}
+{#pointer *wr_bdaddr_t        as BluetoothAddrPtr  -> BluetoothAddr #}
 {#pointer *uuid_t             as UUIDPtr           -> C_UUID #}
 {#pointer *sdp_profile_desc_t as SDPProfileDescPtr -> C_SDPProfileDesc #}
 {#pointer *sdp_record_t       as SDPRecordPtr      -> C_SDPRecord #}
@@ -75,6 +75,26 @@ data C_SockAddrL2CAP
 class SockAddrPtr a
 instance SockAddrPtr C_SockAddrRFCOMM
 instance SockAddrPtr C_SockAddrL2CAP
+
+{#fun unsafe wr_sockaddr_l2_get_bdaddr as c_sockaddr_l2_get_bdaddr
+  {    `BluetoothAddrPtr'
+  ,    `SockAddrL2CAPPtr'
+  } -> `BluetoothAddrPtr' #}
+
+{#fun unsafe wr_sockaddr_l2_set_bdaddr as c_sockaddr_l2_set_bdaddr
+  {    `SockAddrL2CAPPtr'
+  ,    `BluetoothAddrPtr'
+  } -> `()' #}
+
+{#fun unsafe wr_sockaddr_rc_get_bdaddr as c_sockaddr_rc_get_bdaddr
+  {    `BluetoothAddrPtr'
+  ,    `SockAddrRFCOMMPtr'
+  } -> `BluetoothAddrPtr' #}
+
+{#fun unsafe wr_sockaddr_rc_set_bdaddr as c_sockaddr_rc_set_bdaddr
+  {    `SockAddrRFCOMMPtr'
+  ,    `BluetoothAddrPtr'
+  } -> `()' #}
 
 {#fun unsafe sdp_uuid128_create as c_sdp_uuid128_create
   {         `UUIDPtr'
@@ -138,7 +158,7 @@ instance SockAddrPtr C_SockAddrL2CAP
   ,    `String'
   } -> `()' #}
 
-{#fun unsafe sdp_connect as c_sdp_connect
+{#fun unsafe wr_sdp_connect as c_sdp_connect
   `Enum e' =>
   { with'*    `BluetoothAddr'
   , with'*    `BluetoothAddr'
@@ -180,6 +200,14 @@ instance SockAddrPtr C_SockAddrL2CAP
   , alloca- `Int'
   }      -> `Int' #}
 
--- {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
--- {#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
+{#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
+
+{#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
+
 {#fun pure wr_htobs as c_htobs { `Int' } -> `Int' #}
+
+anyAddr :: BluetoothAddr
+anyAddr = unsafePeek c_bdaddr_any
+
+localAddr :: BluetoothAddr
+localAddr = unsafePeek c_bdaddr_local

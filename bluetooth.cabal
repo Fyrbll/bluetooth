@@ -61,6 +61,8 @@ library
     c-sources:
   if os(linux)
     c-sources:         cbits/wr_bluetooth.c
+                     , cbits/wr_l2cap.c
+                     , cbits/wr_rfcomm.c
                      , cbits/wr_sdp.c
                      , cbits/wr_sdp_lib.c
     pkgconfig-depends: bluez

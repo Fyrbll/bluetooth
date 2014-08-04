@@ -2,7 +2,7 @@ module Network.Bluetooth.Linux.SDP where
 
 import Control.Monad
 
-import Data.UUID (UUID, toWords)
+import Data.UUID
 
 import Foreign.C.Error
 import Foreign.C.Types
@@ -12,7 +12,6 @@ import Foreign.Marshal.Utils
 import Foreign.Ptr
 import Foreign.Storable
 
-import Network.Bluetooth.Linux.Addr (anyAddr, localAddr)
 import Network.Bluetooth.Linux.Internal
 import Network.Bluetooth.Utils
 
@@ -80,6 +79,12 @@ registerSDPService uuid info rfcommChannel = do
                (SDPAttributes sn pn d) -> c_sdp_set_info_attr record sn pn d
                SDPNoInfo               -> return ()
           
+--           allocaBytes {#sizeof bdaddr_t #} $ \aa ->
+--             allocaBytes {#sizeof bdaddr_t #} $ \la ->
+--             withArray [0,0,0,0,0,0] $ \aaa ->
+--             withArray [0,0,0,0xff,0xff,0xff] $ \laa -> do
+--             {#set bdaddr_t.b #} aa aaa
+--             {#set bdaddr_t.b #} la laa
           session <- throwErrnoIfNull "sdp_connect" $
             c_sdp_connect anyAddr localAddr SDPRetryIfBusy
           throwErrnoIfMinus1_ "sdp_record_register" $
