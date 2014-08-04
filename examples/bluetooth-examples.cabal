@@ -13,69 +13,23 @@ build-type:          Simple
 -- extra-source-files:  
 cabal-version:       >=1.10
 
----------------------------------------------------------------------
---  __          ___           _                   
---  \ \        / (_)         | |                  
---   \ \  /\  / / _ _ __   __| | _____      _____ 
---    \ \/  \/ / | | '_ \ / _` |/ _ \ \ /\ / / __|
---     \  /\  /  | | | | | (_| | (_) \ V  V /\__ \
---      \/  \/   |_|_| |_|\__,_|\___/ \_/\_/ |___/
---                                               
----------------------------------------------------------------------
+-- executable bluetooth-example-device-inquiry
+-- executable bluetooth-example-l2cap-client
+-- executable bluetooth-example-l2cap-flush-timeout
+-- executable bluetooth-example-l2cap-server
+-- executable bluetooth-example-rfcomm-client
+-- executable bluetooth-example-rfcomm-client-select
 
--- TODO: examples
-
----------------------------------------------------------------------
---    ____   _____  __   __
---   / __ \ / ____| \ \ / /
---  | |  | | (___    \ V / 
---  | |  | |\___ \    > <  
---  | |__| |____) |  / . \ 
---   \____/|_____/  /_/ \_\
---
----------------------------------------------------------------------
-
--- TODO: examples
-
----------------------------------------------------------------------
---   _      _                  
---  | |    (_)                 
---  | |     _ _ __  _   ___  __
---  | |    | | '_ \| | | \ \/ /
---  | |____| | | | | |_| |>  < 
---  |______|_|_| |_|\__,_/_/\_\
---
----------------------------------------------------------------------
-
--- executable bluetooth-example-linux-device-inquiry
--- executable bluetooth-example-linux-l2cap-client
--- executable bluetooth-example-linux-l2cap-flush-timeout
--- executable bluetooth-example-linux-l2cap-server
--- executable bluetooth-example-linux-rfcomm-client
--- executable bluetooth-example-linux-rfcomm-client-select
-
-executable bluetooth-example-linux-rfcomm-server
+executable bluetooth-example-rfcomm-server
   buildable:           True
   main-is:             Main.hs  
   build-depends:       base >= 3 && < 5,
                        bluetooth,
                        network
-  hs-source-dirs:      linux/rfcomm-server
+  hs-source-dirs:      rfcomm-server
   default-language:    Haskell2010
   GHC-options:         -Wall -threaded
 
 -- executable bluetooth-example-linux-rfcomm-server-select
--- executable bluetooth-example-linux-sdp-register
--- executable bluetooth-example-linux-sdp-search
-
----------------------------------------------------------------------
---   ______             ____   _____ _____  
---  |  ____|           |  _ \ / ____|  __ \ 
---  | |__ _ __ ___  ___| |_) | (___ | |  | |
---  |  __| '__/ _ \/ _ \  _ < \___ \| |  | |
---  | |  | | |  __/  __/ |_) |____) | |__| |
---  |_|  |_|  \___|\___|____/|_____/|_____/ 
---
----------------------------------------------------------------------
-
--- TODO: examples
+-- executable bluetooth-example-sdp-register
+-- executable bluetooth-example-sdp-search
