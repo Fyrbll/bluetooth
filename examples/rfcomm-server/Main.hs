@@ -4,9 +4,12 @@ import Network.Bluetooth
 import Network.Bluetooth.UUID
 import Network.Socket
 
+import System.IO
+
 commentate :: String -> IO a -> IO a
 commentate str io = do
     putStr $ str ++ "... "
+    hFlush stdout
     a <- io
     putStrLn "done."
     return a

@@ -6,22 +6,22 @@ wr_bdaddr_t *WR_BDADDR_ANY = NULL;
 wr_bdaddr_t *WR_BDADDR_LOCAL = NULL;
 
 bdaddr_t *from_wr_bdaddr(bdaddr_t *dst, const wr_bdaddr_t *const src) {
-    dst->b[0] = src->b1;
-    dst->b[1] = src->b2;
-    dst->b[2] = src->b3;
-    dst->b[3] = src->b4;
-    dst->b[4] = src->b5;
-    dst->b[5] = src->b6;
+    dst->b[0] = src->b6;
+    dst->b[1] = src->b5;
+    dst->b[2] = src->b4;
+    dst->b[3] = src->b3;
+    dst->b[4] = src->b2;
+    dst->b[5] = src->b1;
     return dst;
 }
 
 wr_bdaddr_t *to_wr_bdaddr(wr_bdaddr_t *dst, const bdaddr_t *const src) {
-    dst->b1 = src->b[0];
-    dst->b2 = src->b[1];
-    dst->b3 = src->b[2];
-    dst->b4 = src->b[3];
-    dst->b5 = src->b[4];
-    dst->b6 = src->b[5];
+    dst->b1 = src->b[5];
+    dst->b2 = src->b[4];
+    dst->b3 = src->b[3];
+    dst->b4 = src->b[2];
+    dst->b5 = src->b[1];
+    dst->b6 = src->b[0];
     return dst;
 }
 

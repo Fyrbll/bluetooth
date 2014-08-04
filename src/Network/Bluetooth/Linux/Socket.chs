@@ -74,12 +74,15 @@ bluetoothAccept (MkSocket fd family sockType proto sockStatus) = do
          L2CAP  -> callAccept {#sizeof sockaddr_l2_t #} c_sockaddr_l2_get_bdaddr
          RFCOMM -> callAccept {#sizeof sockaddr_rc_t #} c_sockaddr_rc_get_bdaddr
   where
-    callAccept :: SockAddrPtr p => Int -> (Ptr BluetoothAddr -> Ptr p -> IO (Ptr BluetoothAddr)) -> IO (Socket, BluetoothAddr)
+    callAccept :: SockAddrPtr p =>
+                  Int
+               -> (Ptr BluetoothAddr -> Ptr p -> IO (Ptr BluetoothAddr))
+               -> IO (Socket, BluetoothAddr)
     callAccept size getter =
       allocaBytes size                                  $ \sockaddrPtr ->
       allocaBytes (sizeOf (undefined :: BluetoothAddr)) $ \bdaddrPtr   -> do
-          newFd <- throwErrnoIfMinus1 "accept" $ c_accept (fromIntegral fd) sockaddrPtr
-          sockaddrBdaddrPtr <- getter bdaddrPtr sockaddrPtr
-          sockaddrBdaddr <- peek sockaddrBdaddrPtr
+          (newFd,_) <- throwErrnoIf ((== -1) . fst) "accept" $ c_accept (fromIntegral fd) sockaddrPtr size
+          _ <- getter bdaddrPtr sockaddrPtr
+          bdaddr <- peek bdaddrPtr
           newStatus <- newMVar Connected
-          return (MkSocket (fromIntegral newFd) family sockType proto newStatus, sockaddrBdaddr)
+          return (MkSocket (fromIntegral newFd) family sockType proto newStatus, bdaddr)

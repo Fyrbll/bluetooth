@@ -5,7 +5,7 @@ import Data.Ix
 
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign.Marshal.Alloc
+import Foreign.Marshal.Utils
 import Foreign.Ptr
 
 import Network.Bluetooth.Linux.Addr
@@ -197,7 +197,7 @@ instance SockAddrPtr C_SockAddrL2CAP
   `SockAddrPtr p' =>
   {         `Int'
   , castPtr `Ptr p'
-  , alloca- `Int'
+  ,         `Int' peekFromIntegral*
   }      -> `Int' #}
 
 {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}

@@ -8,6 +8,8 @@ module Network.Bluetooth.Utils
   , setRealToFrac
   , withCStringLenIntConv
   , peekCStringLenIntConv
+  , peekFromIntegral
+  , peekRealToFrac
   , throwErrnoIfNegative
   , throwErrnoIfNegative_
   , throwErrnoIfNull_
@@ -55,6 +57,12 @@ setRealToFrac setter ptr = setter ptr . realToFrac
 
 withCStringLenIntConv :: Num n => String -> ((CString, n) -> IO a) -> IO a
 withCStringLenIntConv s f = withCStringLen s $ \(p, n) -> f (p, fromIntegral n)
+
+peekFromIntegral :: (Integral a, Storable a, Num b) => Ptr a -> IO b
+peekFromIntegral = fmap fromIntegral . peek
+
+peekRealToFrac :: (Real a, Storable a, Fractional b) => Ptr a -> IO b
+peekRealToFrac = fmap realToFrac . peek
 
 peekCStringLenIntConv :: Integral n => CString -> n -> IO String
 peekCStringLenIntConv s n = peekCStringLen (s, fromIntegral n)
