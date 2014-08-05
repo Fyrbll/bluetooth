@@ -25,6 +25,7 @@ import Network.Socket
 #include "wr_sdp_lib.h"
 
 type SDPFreeFunPtr = {#type sdp_free_func_t #}
+type CUInt8 = {#type uint8_t #}
 
 {#enum define ProtocolUUID {
     RFCOMM_UUID as RFCOMM_UUID
@@ -184,21 +185,28 @@ instance SockAddrPtr C_SockAddrL2CAP
   { packFamily     `Family'
   , packSocketType `SocketType'
   ,                `BluetoothProtocol'
-  }             -> `Int' #}
+  }             -> `CInt' id #}
 
 {#fun unsafe bind as c_bind
   `SockAddrPtr p' =>
-  {         `Int'
+  { id      `CInt'
   , castPtr `Ptr p'
   ,         `Int'
   }      -> `Int' #}
 
 {#fun unsafe accept as c_accept
   `SockAddrPtr p' =>
-  {         `Int'
+  { id      `CInt'
   , castPtr `Ptr p'
-  ,         `Int' peekFromIntegral*
-  }      -> `Int' #}
+  ,         `Int'  peekFromIntegral*
+  }      -> `CInt' id #}
+
+{#fun unsafe getsockname as c_getsockname
+  `SockAddrPtr p' =>
+  { id      `CInt'
+  , castPtr `Ptr p'
+  ,         `Int'  peekFromIntegral*
+  }      -> `CInt' id #}
 
 {#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
 

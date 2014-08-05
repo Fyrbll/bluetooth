@@ -1,5 +1,7 @@
 module Main where
 
+import Control.Exception
+
 import Network.Bluetooth
 import Network.Bluetooth.UUID
 import Network.Socket
@@ -16,7 +18,7 @@ commentate str io = do
 
 main :: IO ()
 main = withSocketsDo $ do
-    let port     = 0
+    let port     = 0 -- any port
         backlog  = 1
         uuid     = serialPortServiceClassUUID
         settings = SDPAttributes "Roto-Rooter Data Router" "Roto-Rooter" "An experimental plumbing router"
@@ -25,6 +27,8 @@ main = withSocketsDo $ do
     btPort <- commentate "Calling bind" $ bluetoothBind handshakeSock anyAddr port
     
     putStrLn $ "Bound on port " ++ show btPort
+    btPort2 <- getSockPort handshakeSock
+    return $ assert (btPort == btPort2) ()
     
     commentate ("Calling listen with backlog " ++ show backlog) $
       bluetoothListen handshakeSock backlog
