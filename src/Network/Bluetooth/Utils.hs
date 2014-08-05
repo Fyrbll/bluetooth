@@ -49,10 +49,10 @@ getFromIntegral getter = fmap fromIntegral . getter
 getRealToFrac :: (Real r, Fractional f) => (Ptr a -> IO r) -> Ptr a -> IO f
 getRealToFrac getter = fmap realToFrac . getter
 
-setFromIntegral :: (Integral i, Num n, Storable n) => (Ptr a -> n -> IO ()) -> Ptr a -> i -> IO ()
+setFromIntegral :: (Integral i, Num n) => (Ptr a -> n -> IO ()) -> Ptr a -> i -> IO ()
 setFromIntegral setter ptr = setter ptr . fromIntegral
 
-setRealToFrac :: (Real r, Fractional f, Storable f) => (Ptr a -> f -> IO ()) -> Ptr a -> r -> IO ()
+setRealToFrac :: (Real r, Fractional f) => (Ptr a -> f -> IO ()) -> Ptr a -> r -> IO ()
 setRealToFrac setter ptr = setter ptr . realToFrac
 
 withCStringLenIntConv :: Num n => String -> ((CString, n) -> IO a) -> IO a

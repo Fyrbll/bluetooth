@@ -33,12 +33,12 @@ bluetoothSocket proto = do
     status <- newMVar NotConnected
     return $ MkSocket fd family sockType (cFromEnum proto) status
 
-bluetoothBind :: Socket -> BluetoothAddr -> Int -> IO BluetoothPort
+bluetoothBind :: Socket -> BluetoothAddr -> Int -> IO ()
 bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr portNum = do
-    modifyMVar sockStatus $ \status -> do
+    modifyMVar_ sockStatus $ \status -> do
         when (status /= NotConnected) . ioError . userError $
           "bind: can't peform bind on socket in status " ++ show status
-        btPort <- mkPort (cToEnum proto) bdaddr portNum
+        btPort <- mkPort (cToEnum proto) portNum
         case cToEnum proto of
              L2CAP  -> callBind {#sizeof sockaddr_l2_t #}
                                 {#set sockaddr_l2_t.l2_family #}
@@ -50,7 +50,7 @@ bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr portNum = do
                                 c_sockaddr_rc_set_bdaddr
                                 {#set sockaddr_rc_t.rc_channel #}
                                 (getPort btPort)
-        return (Bound, btPort)
+        return Bound
   where
     callBind :: (Num s1, Num s2, SockAddrPtr p, Integral i) =>
                 Int
@@ -59,13 +59,19 @@ bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr portNum = do
              -> (Ptr p -> s2 -> IO ())
              -> i
              -> IO ()
-    callBind size poker1 setter poker2 port' =
+    callBind size setter1 setter2 setter3 port' =
       allocaBytes size $ \sockaddrPtr ->
       with bdaddr      $ \bdaddrPtr   -> do
-          poker1 sockaddrPtr . fromIntegral $ packFamily AF_BLUETOOTH
-          setter sockaddrPtr bdaddrPtr
-          poker2 sockaddrPtr $ fromIntegral port'
+          setFromIntegral setter1 sockaddrPtr $ packFamily AF_BLUETOOTH
+          setter2 sockaddrPtr bdaddrPtr
+          setFromIntegral setter3 sockaddrPtr port'
           throwErrnoIfMinus1_ "bind" $ c_bind fd sockaddrPtr size
+
+bluetoothBindAnyPort :: Socket -> BluetoothAddr -> IO BluetoothPort
+bluetoothBindAnyPort sock@(MkSocket _ _ _ proto _) bdaddr = do
+    port <- bindAnyPort (cToEnum proto) bdaddr
+    bluetoothBind sock bdaddr $ getPort port
+    return port
 
 data BluetoothPort = RFCOMMPort Word8
                    | L2CAPPort Word16
@@ -78,25 +84,23 @@ getPort :: BluetoothPort -> Int
 getPort (L2CAPPort p)  = fromIntegral p
 getPort (RFCOMMPort p) = fromIntegral p
 
-mkPort :: BluetoothProtocol -> BluetoothAddr -> Int -> IO BluetoothPort
-mkPort RFCOMM addr port | port == 0 = anyPort RFCOMM addr
-mkPort RFCOMM _    port | 1 <= port && port <= 30
-                        = return . RFCOMMPort $ fromIntegral port
-mkPort RFCOMM _    _    = ioError $ userError "RFCOMM ports must be between 1 and 30."
-mkPort L2CAP  addr port | port == 0 = anyPort L2CAP addr
-mkPort L2CAP  _    port | odd port && 4097 <= port && port <= 32767
-                        = return . L2CAPPort $ fromIntegral port
-mkPort L2CAP  _    _    = ioError $ userError "L2CAP ports must be odd numbers between 4097 and 32,767."
+mkPort :: BluetoothProtocol -> Int -> IO BluetoothPort
+mkPort RFCOMM port | 1 <= port && port <= 30
+                   = return . RFCOMMPort $ fromIntegral port
+mkPort RFCOMM _    = ioError $ userError "RFCOMM ports must be between 1 and 30."
+mkPort L2CAP  port | odd port && 4097 <= port && port <= 32767
+                   = return . L2CAPPort $ fromIntegral port
+mkPort L2CAP  _    = ioError $ userError "L2CAP ports must be odd numbers between 4097 and 32,767."
 
-anyPort :: BluetoothProtocol -> BluetoothAddr -> IO BluetoothPort
-anyPort proto addr = do
+bindAnyPort :: BluetoothProtocol -> BluetoothAddr -> IO BluetoothPort
+bindAnyPort proto addr = do
     avails <- flip filterM (portRange proto) $ \portNum -> do
         sock <- bluetoothSocket proto
         res  <- try $ bluetoothBind sock addr portNum
         close sock
-        return $ isRight (res :: Either IOError BluetoothPort)
+        return $ isRight (res :: Either IOError ())
     case avails of
-        portNum:_ -> mkPort proto addr portNum
+        portNum:_ -> mkPort proto portNum
         _         -> ioError $ userError "Unable to find any available port"
   where
     portRange L2CAP  = [4097, 4099 .. 32767]
@@ -126,6 +130,13 @@ bluetoothAccept (MkSocket fd family sockType proto sockStatus) = do
           bdaddr <- peek bdaddrPtr
           newStatus <- newMVar Connected
           return (MkSocket newFd family sockType proto newStatus, bdaddr)
+
+-- bluetoothAccept :: Socket -> BluetoothAddr -> Int -> IO ()
+-- bluetoothAccept (MkSocket fd _ _ proto sockStatus) bdaddr portNum = do
+--     modifyMVar sockStatus $ \status -> do
+--         when (status /= NotConnected) . ioError . userError $
+--           "accept: can't peform connect on socket in status " ++ show status
+--         btPort <- mkPort (cToEnum proto) bdaddr portNum
 
 getSockPort :: Socket -> IO BluetoothPort
 getSockPort (MkSocket fd _ _ proto status) = do

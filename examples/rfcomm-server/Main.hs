@@ -18,13 +18,12 @@ commentate str io = do
 
 main :: IO ()
 main = withSocketsDo $ do
-    let port     = 0 -- any port
-        backlog  = 1
+    let backlog  = 1
         uuid     = serialPortServiceClassUUID
         settings = SDPAttributes "Roto-Rooter Data Router" "Roto-Rooter" "An experimental plumbing router"
         messLen  = 4096
     handshakeSock <- commentate "Calling socket" $ bluetoothSocket RFCOMM
-    btPort <- commentate "Calling bind" $ bluetoothBind handshakeSock anyAddr port
+    btPort <- commentate "Calling bind" $ bluetoothBindAnyPort handshakeSock anyAddr
     
     putStrLn $ "Bound on port " ++ show btPort
     btPort2 <- getSockPort handshakeSock

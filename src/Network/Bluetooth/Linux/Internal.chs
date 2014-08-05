@@ -201,6 +201,13 @@ instance SockAddrPtr C_SockAddrL2CAP
   ,         `Int'  peekFromIntegral*
   }      -> `CInt' id #}
 
+{#fun unsafe connect as c_connect
+  `SockAddrPtr p' =>
+  { id      `CInt'
+  , castPtr `Ptr p'
+  ,         `Int'
+  }      -> `Int' #}
+
 {#fun unsafe getsockname as c_getsockname
   `SockAddrPtr p' =>
   { id      `CInt'
