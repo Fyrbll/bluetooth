@@ -1,7 +1,11 @@
 module Network.Bluetooth.Linux.Socket where
 
 import Control.Concurrent.MVar
+import Control.Exception
 import Control.Monad
+
+import Data.Either
+import Data.Word
 
 import Foreign.C.Error
 import Foreign.C.Types
@@ -29,23 +33,24 @@ bluetoothSocket proto = do
     status <- newMVar NotConnected
     return $ MkSocket (fromIntegral fd) family sockType (cFromEnum proto) status
 
-bluetoothBind :: Socket -> BluetoothAddr -> Int -> IO ()
-bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr port = do
-    modifyMVar_ sockStatus $ \status -> do
+bluetoothBind :: Integral i => Socket -> BluetoothAddr -> i -> IO BluetoothPort
+bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr portNum = do
+    modifyMVar sockStatus $ \status -> do
         when (status /= NotConnected) . ioError . userError $
           "bind: can't peform bind on socket in status " ++ show status
+        btPort <- mkPort (cToEnum proto) bdaddr portNum
         case cToEnum proto of
              L2CAP  -> callBind {#sizeof sockaddr_l2_t #}
                                 {#set sockaddr_l2_t.l2_family #}
                                 c_sockaddr_l2_set_bdaddr
                                 {#set sockaddr_l2_t.l2_psm #}
-                                (c_htobs port)
+                                (c_htobs $ getPort btPort)
              RFCOMM -> callBind {#sizeof sockaddr_rc_t #}
                                 {#set sockaddr_rc_t.rc_family #}
                                 c_sockaddr_rc_set_bdaddr
                                 {#set sockaddr_rc_t.rc_channel #}
-                                port
-        return Bound
+                                (getPort btPort)
+        return (Bound, btPort)
   where
     callBind :: (Num s1, Num s2, SockAddrPtr p, Integral i) =>
                 Int
@@ -61,6 +66,41 @@ bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr port = do
           setter sockaddrPtr bdaddrPtr
           poker2 sockaddrPtr $ fromIntegral port'
           throwErrnoIfMinus1_ "bind" $ c_bind (fromIntegral fd) sockaddrPtr size
+
+data BluetoothPort = RFCOMMPort Word8
+                   | L2CAPPort Word16
+                   deriving Eq
+
+instance Show BluetoothPort where
+    show = show . getPort
+
+getPort :: BluetoothPort -> Int
+getPort (L2CAPPort p)  = fromIntegral p
+getPort (RFCOMMPort p) = fromIntegral p
+
+mkPort :: Integral i => BluetoothProtocol -> BluetoothAddr -> i -> IO BluetoothPort
+mkPort RFCOMM addr port | port == 0 = anyPort RFCOMM addr 1 (30 :: Word8)
+mkPort RFCOMM _    port | 1 <= port && port <= 30
+                        = return . RFCOMMPort $ fromIntegral port
+mkPort RFCOMM _    _    = ioError $ userError "RFCOMM ports must be between 1 and 30."
+mkPort L2CAP  addr port | port == 0 = anyPort L2CAP addr 4097 (32767 :: Word16)
+mkPort L2CAP  _    port | odd port && 4097 <= port && port <= 32767
+                        = return . L2CAPPort $ fromIntegral port
+mkPort L2CAP  _    _    = ioError $ userError "L2CAP ports must be odd numbers between 4097 and 32,767."
+
+anyPort :: Integral i => BluetoothProtocol -> BluetoothAddr -> i -> i -> IO BluetoothPort
+anyPort proto addr portMin portMax = do
+    avails <- flip filterM (portRange proto) $ \portNum -> do
+        sock <- bluetoothSocket proto
+        res  <- try $ bluetoothBind sock addr portNum
+        close sock
+        return $ isRight (res :: Either IOError BluetoothPort)
+    case avails of
+        portNum:_ -> mkPort proto addr portNum
+        _         -> ioError $ userError "Unable to find any available port"
+  where
+    portRange L2CAP  = [portMin, portMin+2 .. portMax]
+    portRange RFCOMM = [portMin .. portMax]
 
 bluetoothListen :: Socket -> Int -> IO ()
 bluetoothListen = listen -- TODO: tweak exception handling

@@ -13,6 +13,7 @@ import Foreign.Ptr
 import Foreign.Storable
 
 import Network.Bluetooth.Linux.Internal
+import Network.Bluetooth.Linux.Socket
 import Network.Bluetooth.Utils
 
 #include <bluetooth/sdp.h>
@@ -26,8 +27,8 @@ data SDPInfo = SDPAttributes {
              | SDPNoInfo
   deriving (Read, Show)
 
-registerSDPService :: UUID -> SDPInfo -> Int -> IO SDPSessionPtr
-registerSDPService uuid info rfcommChannel = do
+registerSDPService :: UUID -> SDPInfo -> BluetoothPort -> IO SDPSessionPtr
+registerSDPService uuid info port = do
     let uuidSize              = {#sizeof uuid_t #}
         (w1,w2,w3,w4)         = toWords uuid
         sdpUUID16Create uuid' = throwErrnoIfNull_ "sdp_uuid16_create" . c_sdp_uuid16_create uuid'
@@ -66,7 +67,7 @@ registerSDPService uuid info rfcommChannel = do
           protoList <- sdpListAppend nullPtr l2capList
           
           sdpUUID16Create rfcommUuid RFCOMM_UUID
-          channel <- with rfcommChannel $ c_sdp_data_alloc SDPCUInt8
+          channel <- with (getPort port) $ c_sdp_data_alloc SDPCUInt8
           rfcommList <- sdpListAppend nullPtr rfcommUuid
           sdpListAppend_ rfcommList channel
           sdpListAppend_ protoList rfcommList

@@ -204,7 +204,10 @@ instance SockAddrPtr C_SockAddrL2CAP
 
 {#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
 
-{#fun pure wr_htobs as c_htobs { `Int' } -> `Int' #}
+{#fun pure wr_htobs as c_htobs
+  `Integral i' =>
+  { fromIntegral `i'
+  }           -> `i' fromIntegral #}
 
 anyAddr :: BluetoothAddr
 anyAddr = unsafePeek c_bdaddr_any
