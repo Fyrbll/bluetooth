@@ -19,10 +19,7 @@ This library abstracts low-level C Bluetooth utilities on each of the [Tier 1](h
   - [ ] [RFCOMM client](http://web.archive.org/web/20071028165739/http://www.btessentials.com/examples/bluez/rfcomm-client.c)
   - [ ] [L2CAP server](http://web.archive.org/web/20071028165729/http://www.btessentials.com/examples/bluez/l2cap-server.c)
   - [ ] [L2CAP client](http://web.archive.org/web/20071028165724/http://www.btessentials.com/examples/bluez/l2cap-client.c)
-  - [ ] [SDP register](http://web.archive.org/web/20071028165754/http://www.btessentials.com/examples/bluez/sdp-register.c)
   - [ ] [SDP search](http://web.archive.org/web/20071028165759/http://www.btessentials.com/examples/bluez/sdp-search.c)
-  - [ ] [RFCOMM server select](http://web.archive.org/web/20071028165744/http://www.btessentials.com/examples/bluez/rfcomm-server-select.c)
-  - [ ] [RFCOMM client select](http://web.archive.org/web/20071028165734/http://www.btessentials.com/examples/bluez/rfcomm-client-select.c)
   - [ ] [Set L2CAP flush timeout](http://web.archive.org/web/20071028165804/http://www.btessentials.com/examples/bluez/set-flush-to.c)
 
 - [ ] FreeBSD ([`netgraph`](http://www.freebsd.org/cgi/man.cgi?query=netgraph&sektion=4))

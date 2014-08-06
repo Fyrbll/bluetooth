@@ -18,7 +18,6 @@ cabal-version:       >=1.10
 -- executable bluetooth-example-l2cap-flush-timeout
 -- executable bluetooth-example-l2cap-server
 -- executable bluetooth-example-rfcomm-client
--- executable bluetooth-example-rfcomm-client-select
 
 executable bluetooth-example-rfcomm-server
   buildable:           True
@@ -30,6 +29,4 @@ executable bluetooth-example-rfcomm-server
   default-language:    Haskell2010
   GHC-options:         -Wall -threaded
 
--- executable bluetooth-example-linux-rfcomm-server-select
--- executable bluetooth-example-sdp-register
 -- executable bluetooth-example-sdp-search
