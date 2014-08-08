@@ -16,7 +16,8 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Network.Bluetooth
                        Network.Bluetooth.Addr
-                       Network.Bluetooth.Internal
+                       Network.Bluetooth.Exception
+                       Network.Bluetooth.Protocol
                        Network.Bluetooth.SDP
                        Network.Bluetooth.Socket
                        Network.Bluetooth.UUID
@@ -27,7 +28,7 @@ library
     other-modules:
   if os(linux)
     other-modules:     Network.Bluetooth.Linux.Addr
-                       Network.Bluetooth.Linux.Internal
+                       Network.Bluetooth.Linux.Protocol
                        Network.Bluetooth.Linux.SDP
                        Network.Bluetooth.Linux.Socket
   if os(freebsd)

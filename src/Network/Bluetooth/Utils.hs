@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MagicHash #-}
+{-# LANGUAGE CPP, MagicHash, TupleSections #-}
 module Network.Bluetooth.Utils
   ( cToEnum
   , cFromEnum
@@ -17,6 +17,13 @@ module Network.Bluetooth.Utils
   , unsafePeekFromIntegral
   , unsafePeekRealToFrac
   , with'
+  , withCast
+  , withCastArray
+  , withCastArray0
+  , withCastArrayLen
+  , withCastArrayLen0
+  , withLen
+  , withLenPtr
   , byteSwap32
   ) where
 
@@ -26,6 +33,9 @@ import qualified Data.Word as W
 
 import           Foreign.C.Error
 import           Foreign.C.String
+import           Foreign.C.Types
+import           Foreign.Marshal.Alloc
+import           Foreign.Marshal.Array
 import           Foreign.Marshal.Utils
 import           Foreign.Ptr
 import           Foreign.Storable
@@ -89,6 +99,30 @@ unsafePeekRealToFrac = realToFrac . unsafePeek
 --   See <https://github.com/haskell/c2hs/issues/93 this issue>.
 with' :: Storable a => a -> (Ptr a -> IO b) -> IO b
 with' = with
+
+withCast :: Storable a => a -> (Ptr b -> IO c) -> IO c
+withCast val f = with val $ f . castPtr
+
+withCastArray :: Storable a => [a] -> (Ptr b -> IO c) -> IO c
+withCastArray vals = withCastArrayLen vals . const
+
+withCastArrayLen :: Storable a => [a] -> (Int -> Ptr b -> IO c) -> IO c
+withCastArrayLen vals f = withArrayLen vals $ \len -> f len . castPtr
+
+withCastArray0 :: Storable a => a -> [a] -> (Ptr b -> IO c) -> IO c
+withCastArray0 marker vals = withCastArrayLen0 marker vals . const
+
+withCastArrayLen0 :: Storable a => a -> [a] -> (Int -> Ptr b -> IO c) -> IO c
+withCastArrayLen0 marker vals f = withArrayLen0 marker vals $ \len -> f len . castPtr
+
+withLen :: (Num n, Storable s) => s -> ((Ptr s, n) -> IO a) -> IO a
+withLen val f = with val $ f . (, fromIntegral $ sizeOf val)
+
+withLenPtr :: (Num n, Storable n, Storable s) => s -> ((Ptr s, Ptr n) -> IO a) -> IO a
+withLenPtr val f = with val                                   $ \valPtr ->
+                   allocaBytes (sizeOf (undefined :: CLLong)) $ \lenPtr -> do
+    poke lenPtr . fromIntegral $ sizeOf val
+    f (valPtr, lenPtr)
 
 byteSwap32 :: W.Word32 -> W.Word32
 #if __GLASGOW_HASKELL__ >= 708

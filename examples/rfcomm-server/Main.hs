@@ -26,7 +26,7 @@ main = withSocketsDo $ do
     btPort <- commentate "Calling bind" $ bluetoothBindAnyPort handshakeSock anyAddr
     
     putStrLn $ "Bound on port " ++ show btPort
-    btPort2 <- getSockPort handshakeSock
+    btPort2 <- bluetoothSocketPort handshakeSock
     return $ assert (btPort == btPort2) ()
     
     commentate ("Calling listen with backlog " ++ show backlog) $

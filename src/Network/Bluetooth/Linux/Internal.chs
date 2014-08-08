@@ -13,19 +13,14 @@ import Network.Bluetooth.Utils
 import Network.Socket
 
 #include <bluetooth/bluetooth.h>
-#include <bluetooth/l2cap.h>
-#include <bluetooth/rfcomm.h>
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
 #include <sys/socket.h>
 #include "wr_bluetooth.h"
-#include "wr_l2cap.h"
-#include "wr_rfcomm.h"
 #include "wr_sdp.h"
 #include "wr_sdp_lib.h"
 
 type SDPFreeFunPtr = {#type sdp_free_func_t #}
-type CUInt8 = {#type uint8_t #}
 
 {#enum define ProtocolUUID {
     RFCOMM_UUID as RFCOMM_UUID
@@ -49,53 +44,19 @@ type CUInt8 = {#type uint8_t #}
     SDP_RETRY_IF_BUSY as SDPRetryIfBusy
   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
-{#enum define BluetoothProtocol {
-    BTPROTO_L2CAP  as L2CAP
-  , BTPROTO_RFCOMM as RFCOMM
-  } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
-
 data C_UUID
 data C_SDPProfileDesc
 data C_SDPRecord
 data C_SDPList
 data C_SDPData
 data C_SDPSession
-data C_SockAddrRFCOMM
-data C_SockAddrL2CAP
 
-{#pointer *wr_bdaddr_t        as BluetoothAddrPtr  -> BluetoothAddr #}
 {#pointer *uuid_t             as UUIDPtr           -> C_UUID #}
 {#pointer *sdp_profile_desc_t as SDPProfileDescPtr -> C_SDPProfileDesc #}
 {#pointer *sdp_record_t       as SDPRecordPtr      -> C_SDPRecord #}
 {#pointer *sdp_list_t         as SDPListPtr        -> C_SDPList #}
 {#pointer *sdp_data_t         as SDPDataPtr        -> C_SDPData #}
 {#pointer *sdp_session_t      as SDPSessionPtr     -> C_SDPSession #}
-{#pointer *sockaddr_rc_t      as SockAddrRFCOMMPtr -> C_SockAddrRFCOMM #}
-{#pointer *sockaddr_l2_t      as SockAddrL2CAPPtr  -> C_SockAddrL2CAP #}
-
-class SockAddrPtr a
-instance SockAddrPtr C_SockAddrRFCOMM
-instance SockAddrPtr C_SockAddrL2CAP
-
-{#fun unsafe wr_sockaddr_l2_get_bdaddr as c_sockaddr_l2_get_bdaddr
-  {    `BluetoothAddrPtr'
-  ,    `SockAddrL2CAPPtr'
-  } -> `BluetoothAddrPtr' #}
-
-{#fun unsafe wr_sockaddr_l2_set_bdaddr as c_sockaddr_l2_set_bdaddr
-  {    `SockAddrL2CAPPtr'
-  ,    `BluetoothAddrPtr'
-  } -> `()' #}
-
-{#fun unsafe wr_sockaddr_rc_get_bdaddr as c_sockaddr_rc_get_bdaddr
-  {    `BluetoothAddrPtr'
-  ,    `SockAddrRFCOMMPtr'
-  } -> `BluetoothAddrPtr' #}
-
-{#fun unsafe wr_sockaddr_rc_set_bdaddr as c_sockaddr_rc_set_bdaddr
-  {    `SockAddrRFCOMMPtr'
-  ,    `BluetoothAddrPtr'
-  } -> `()' #}
 
 {#fun unsafe sdp_uuid128_create as c_sdp_uuid128_create
   {         `UUIDPtr'
@@ -161,8 +122,8 @@ instance SockAddrPtr C_SockAddrL2CAP
 
 {#fun unsafe wr_sdp_connect as c_sdp_connect
   `Enum e' =>
-  { with'*    `BluetoothAddr'
-  , with'*    `BluetoothAddr'
+  { withCast* `BluetoothAddr'
+  , withCast* `BluetoothAddr'
   , cFromEnum `e'
   }        -> `SDPSessionPtr' #}
 
@@ -188,44 +149,34 @@ instance SockAddrPtr C_SockAddrL2CAP
   }             -> `CInt' id #}
 
 {#fun unsafe bind as c_bind
-  `SockAddrPtr p' =>
+  `SockAddrBluetooth a' =>
   { id      `CInt'
-  , castPtr `Ptr p'
+  , castPtr `Ptr a'
   ,         `Int'
   }      -> `Int' #}
 
 {#fun unsafe accept as c_accept
-  `SockAddrPtr p' =>
+  `SockAddrBluetooth a' =>
   { id      `CInt'
-  , castPtr `Ptr p'
+  , castPtr `Ptr a'
   ,         `Int'  peekFromIntegral*
   }      -> `CInt' id #}
 
 {#fun unsafe connect as c_connect
-  `SockAddrPtr p' =>
+  `SockAddrBluetooth a' =>
   { id      `CInt'
-  , castPtr `Ptr p'
+  , castPtr `Ptr a'
   ,         `Int'
   }      -> `Int' #}
 
 {#fun unsafe getsockname as c_getsockname
-  `SockAddrPtr p' =>
+  `SockAddrBluetooth a' =>
   { id      `CInt'
-  , castPtr `Ptr p'
+  , castPtr `Ptr a'
   ,         `Int'  peekFromIntegral*
   }      -> `CInt' id #}
-
-{#fun pure wr_bdaddr_any as c_bdaddr_any {} -> `BluetoothAddrPtr' #}
-
-{#fun pure wr_bdaddr_local as c_bdaddr_local {} -> `BluetoothAddrPtr' #}
 
 {#fun pure wr_htobs as c_htobs
   `Integral i' =>
   { fromIntegral `i'
   }           -> `i' fromIntegral #}
-
-anyAddr :: BluetoothAddr
-anyAddr = unsafePeek c_bdaddr_any
-
-localAddr :: BluetoothAddr
-localAddr = unsafePeek c_bdaddr_local
