@@ -155,7 +155,7 @@ data C_SDPSession
 
 {#fun unsafe sdp_uuid2strn as c_sdp_uuid2strn
   {    `UUIDPtr'
-  ,    `String'& peekCStringLenIntConv*
+  ,    `String'&
   } -> `Int' #}
 
 {#fun unsafe sdp_uuid16_create as c_sdp_uuid16_create

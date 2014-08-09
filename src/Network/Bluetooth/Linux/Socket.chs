@@ -122,9 +122,9 @@ bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
 
 {#fun unsafe bind as c_bind
   `SockAddrBluetooth a' =>
-  { id           `CInt'
-  , withCastLen* `a'&
-  }           -> `Int' #}
+  { id               `CInt'
+  , withCastLenConv* `a'&
+  }               -> `Int' #}
 
 {#fun unsafe accept as c_accept
   `SockAddrBluetooth a' =>
@@ -135,9 +135,9 @@ bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
 
 {#fun unsafe connect as c_connect
   `SockAddrBluetooth a' =>
-  { id           `CInt'
-  , withCastLen* `a'&
-  }           -> `Int' #}
+  { id               `CInt'
+  , withCastLenConv* `a'&
+  }               -> `Int' #}
 
 {#fun unsafe getsockname as c_getsockname
   `SockAddrBluetooth a' =>
