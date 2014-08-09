@@ -34,7 +34,7 @@ bluetoothSocket proto = do
     status <- newMVar NotConnected
     return $ MkSocket fd family sockType (cFromEnum proto) status
 
-assignSocket :: (forall a. SockAddrBluetooth a => CInt -> Ptr a -> Int -> IO Int)
+assignSocket :: (forall a. SockAddrBluetooth a => CInt -> a -> IO Int)
              -> String
              -> Socket -> BluetoothAddr -> BluetoothPort -> IO ()
 assignSocket c_assigner name (MkSocket fd _ _ proto sockStatus) bdaddr portNum =
@@ -44,14 +44,12 @@ assignSocket c_assigner name (MkSocket fd _ _ proto sockStatus) bdaddr portNum =
         let protoEnum = cToEnum proto
         unless (isBluetoothPortValid protoEnum portNum) . throwIO $ BluetoothPortException protoEnum portNum
         case protoEnum of
-             L2CAP  -> with (SockAddrL2CAP AF_BLUETOOTH (c_htobs portNum) bdaddr) $ \sockaddrPtr ->
-               callAssign sockaddrPtr $ sizeOf (undefined :: SockAddrL2CAP)
-             RFCOMM -> with (SockAddrRFCOMM AF_BLUETOOTH bdaddr $ fromIntegral portNum) $ \sockaddrPtr ->
-               callAssign sockaddrPtr $ sizeOf (undefined :: SockAddrRFCOMM)
+             L2CAP  -> callAssign $ SockAddrL2CAP AF_BLUETOOTH (c_htobs portNum) bdaddr
+             RFCOMM -> callAssign . SockAddrRFCOMM AF_BLUETOOTH bdaddr $ fromIntegral portNum
         return Bound
   where
-    callAssign :: SockAddrBluetooth a => Ptr a -> Int -> IO ()
-    callAssign sockaddrPtr = throwErrnoIfMinus1_ name $ c_assigner fd sockaddrPtr size
+    callAssign :: SockAddrBluetooth a => a -> IO ()
+    callAssign sockaddr = throwErrnoIfMinus1_ name $ c_assigner fd sockaddr
 
 bluetoothBind :: Socket -> BluetoothAddr -> BluetoothPort -> IO ()
 bluetoothBind = assignSocket c_bind "bind"
@@ -124,10 +122,9 @@ bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
 
 {#fun unsafe bind as c_bind
   `SockAddrBluetooth a' =>
-  { id      `CInt'
-  , castPtr `Ptr a'
-  ,         `Int'
-  }      -> `Int' #}
+  { id           `CInt'
+  , withCastLen* `a'&
+  }           -> `Int' #}
 
 {#fun unsafe accept as c_accept
   `SockAddrBluetooth a' =>
@@ -138,10 +135,9 @@ bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
 
 {#fun unsafe connect as c_connect
   `SockAddrBluetooth a' =>
-  { id      `CInt'
-  , castPtr `Ptr a'
-  ,         `Int'
-  }      -> `Int' #}
+  { id           `CInt'
+  , withCastLen* `a'&
+  }           -> `Int' #}
 
 {#fun unsafe getsockname as c_getsockname
   `SockAddrBluetooth a' =>
