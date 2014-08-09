@@ -1,6 +1,7 @@
 #ifndef WR_L2CAP_H
 #define WR_L2CAP_H
 
+#include <bluetooth/bluetooth.h>
 #include <bluetooth/l2cap.h>
 #include "wr_bluetooth.h"
 

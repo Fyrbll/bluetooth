@@ -30,6 +30,7 @@ module Network.Bluetooth.Utils
 import           Control.Monad
 
 import qualified Data.Word as W
+import           Data.Word (Word32)
 
 import           Foreign.C.Error
 import           Foreign.C.String
@@ -124,7 +125,7 @@ withLenPtr val f = with val                                   $ \valPtr ->
     poke lenPtr . fromIntegral $ sizeOf val
     f (valPtr, lenPtr)
 
-byteSwap32 :: W.Word32 -> W.Word32
+byteSwap32 :: Word32 -> Word32
 #if __GLASGOW_HASKELL__ >= 708
 byteSwap32 = W.byteSwap32
 #else

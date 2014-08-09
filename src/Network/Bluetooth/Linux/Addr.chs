@@ -21,7 +21,6 @@ import qualified Text.Read.Lex as Rex
 import qualified Text.ParserCombinators.ReadPrec as Rex
 import qualified Text.ParserCombinators.ReadP as Rex
 
-#include <bluetooth/bluetooth.h>
 #include <stdint.h>
 #include "wr_bluetooth.h"
 #include "wr_l2cap.h"

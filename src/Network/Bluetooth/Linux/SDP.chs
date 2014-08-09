@@ -19,9 +19,6 @@ import           Network.Bluetooth.Linux.Addr
 import           Network.Bluetooth.Linux.Protocol
 import           Network.Bluetooth.Utils
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/sdp.h>
-#include <bluetooth/sdp_lib.h>
 #include "wr_bluetooth.h"
 #include "wr_sdp.h"
 #include "wr_sdp_lib.h"
@@ -79,12 +76,6 @@ registerSDPService uuid info port = do
                (SDPAttributes sn pn d) -> c_sdp_set_info_attr record sn pn d
                SDPNoInfo               -> return ()
           
---           allocaBytes {#sizeof bdaddr_t #} $ \aa ->
---             allocaBytes {#sizeof bdaddr_t #} $ \la ->
---             withArray [0,0,0,0,0,0] $ \aaa ->
---             withArray [0,0,0,0xff,0xff,0xff] $ \laa -> do
---             {#set bdaddr_t.b #} aa aaa
---             {#set bdaddr_t.b #} la laa
           session <- throwErrnoIfNull "sdp_connect" $
             c_sdp_connect anyAddr localAddr SDPRetryIfBusy
           throwErrnoIfMinus1_ "sdp_record_register" $

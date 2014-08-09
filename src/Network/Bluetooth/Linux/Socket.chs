@@ -20,7 +20,6 @@ import Network.Bluetooth.Linux.Protocol
 import Network.Bluetooth.Utils
 import Network.Socket
 
-#include <bluetooth/bluetooth.h>
 #include <sys/socket.h>
 #include "wr_l2cap.h"
 #include "wr_rfcomm.h"
@@ -43,96 +42,25 @@ assignSocket c_assigner name (MkSocket fd _ _ proto sockStatus) bdaddr portNum =
         when (status /= NotConnected) . ioError . userError $
           name ++ ": can't peform " ++ name ++ " on socket in status " ++ show status
         let protoEnum = cToEnum proto
---             btPort    = mkPort protoEnum portNum
         unless (isBluetoothPortValid protoEnum portNum) . throwIO $ BluetoothPortException protoEnum portNum
---             sockaddr = case protoEnum of
---                             L2CAP ->  SockAddrL2CAP family (c_htobs btPort) bdaddr
---                             RFCOMM -> SockAddrRFCOMM family bdaddr btPort
         case protoEnum of
              L2CAP  -> with (SockAddrL2CAP AF_BLUETOOTH (c_htobs portNum) bdaddr) $ \sockaddrPtr ->
-               throwErrnoIfMinus1_ name $ c_assigner fd sockaddrPtr $ sizeOf (undefined :: SockAddrL2CAP)
+               callAssign sockaddrPtr $ sizeOf (undefined :: SockAddrL2CAP)
              RFCOMM -> with (SockAddrRFCOMM AF_BLUETOOTH bdaddr $ fromIntegral portNum) $ \sockaddrPtr ->
-               throwErrnoIfMinus1_ name . c_assigner fd sockaddrPtr $ sizeOf (undefined :: SockAddrRFCOMM)
---         let portNum' = (case protoEnum of
---                            L2CAP -> c_htobs
---                            RFCOMM -> id) $ getPort btPort
---         allocaBytes sockaddrSize $ \sockaddrPtr -> with bdaddr $ \bdaddrPtr -> do
---             setFromIntegral familySetter sockaddrPtr $ packFamily AF_BLUETOOTH
---             bdaddrSetter sockaddrPtr bdaddrPtr
---             setFromIntegral portSetter sockaddrPtr portNum'
---             throwErrnoIfMinus1_ name $ c_assigner fd sockaddrPtr sockaddrSize
+               callAssign sockaddrPtr $ sizeOf (undefined :: SockAddrRFCOMM)
         return Bound
---   where
---     callAssigner :: Socket -> a -> Ptr a -> Int -> IO ()
---     callAssigner (MkSocket fd _ _ _ _) sockaddr sockaddrPtr size = do
---         poke sockaddrPtr sockaddr
---         throwErrnoIfMinus1_ name $ c_assigner fd sockaddrPtr size
+  where
+    callAssign :: SockAddrBluetooth a => Ptr a -> Int -> IO ()
+    callAssign sockaddrPtr = throwErrnoIfMinus1_ name $ c_assigner fd sockaddrPtr size
 
 bluetoothBind :: Socket -> BluetoothAddr -> BluetoothPort -> IO ()
 bluetoothBind = assignSocket c_bind "bind"
--- bluetoothBind sock@(MkSocket _ _ _ proto _) =
---   let bind' = case cToEnum proto of
---                    L2CAP  -> assignSocket {#sizeof sockaddr_l2_t #}
---                                           {#set sockaddr_l2_t.l2_family #}
---                                           c_sockaddr_l2_set_bdaddr
---                                           {#set sockaddr_l2_t.l2_psm #}
---                                           c_bind
---                    RFCOMM -> assignSocket {#sizeof sockaddr_rc_t #}
---                                           {#set sockaddr_rc_t.rc_family #}
---                                           c_sockaddr_rc_set_bdaddr
---                                           {#set sockaddr_rc_t.rc_channel #}
---                                           c_bind
---   in bind' "bind" sock
--- bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr portNum = do
---     modifyMVar_ sockStatus $ \status -> do
---         when (status /= NotConnected) . ioError . userError $
---           "bind: can't peform bind on socket in status " ++ show status
---         let protoEnum = cToEnum proto
---         btPort <- mkPort protoEnum portNum
---         case protoEnum of
---              L2CAP  -> callBind {#sizeof sockaddr_l2_t #}
---                                 {#set sockaddr_l2_t.l2_family #}
---                                 c_sockaddr_l2_set_bdaddr
---                                 {#set sockaddr_l2_t.l2_psm #}
---                                 (c_htobs $ getPort btPort)
---              RFCOMM -> callBind {#sizeof sockaddr_rc_t #}
---                                 {#set sockaddr_rc_t.rc_family #}
---                                 c_sockaddr_rc_set_bdaddr
---                                 {#set sockaddr_rc_t.rc_channel #}
---                                 (getPort btPort)
---         return Bound
---   where
---     callBind :: (Num s1, Num s2, SockAddrPtr p, Integral i) =>
---                 Int
---              -> (Ptr p -> s1 -> IO ())
---              -> (Ptr p -> Ptr BluetoothAddr -> IO ())
---              -> (Ptr p -> s2 -> IO ())
---              -> i
---              -> IO ()
---     callBind size setter1 setter2 setter3 port' =
---       allocaBytes size $ \sockaddrPtr ->
---       with bdaddr      $ \bdaddrPtr   -> do
---           setFromIntegral setter1 sockaddrPtr $ packFamily AF_BLUETOOTH
---           setter2 sockaddrPtr bdaddrPtr
---           setFromIntegral setter3 sockaddrPtr port'
---           throwErrnoIfMinus1_ "bind" $ c_bind fd sockaddrPtr size
 
 bluetoothBindAnyPort :: Socket -> BluetoothAddr -> IO BluetoothPort
 bluetoothBindAnyPort sock@(MkSocket _ _ _ proto _) bdaddr = do
     port <- bindAnyPort (cToEnum proto) bdaddr
     bluetoothBind sock bdaddr $ fromIntegral port
     return port
-
--- data BluetoothPort = RFCOMMPort { rfcommPort :: Word8 }
---                    | L2CAPPort { l2capPort :: Word16 }
---                    deriving Eq
--- 
--- instance Show BluetoothPort where
---     show = show . getPort
--- 
--- getPort :: BluetoothPort -> Int
--- getPort (L2CAPPort p)  = fromIntegral p
--- getPort (RFCOMMPort p) = fromIntegral p
 
 bindAnyPort :: BluetoothProtocol -> BluetoothAddr -> IO BluetoothPort
 bindAnyPort proto addr = do
@@ -169,34 +97,8 @@ bluetoothAccept sock@(MkSocket _ family sockType proto sockStatus) = do
           newStatus <- newMVar Connected
           return (MkSocket newFd family sockType proto newStatus, bdaddr)
 
--- bluetoothConnect :: Socket -> BluetoothAddr -> Int -> IO ()
--- bluetoothConnect (MkSocket fd _ _ proto sockStatus) bdaddr portNum = do
---     modifyMVar sockStatus $ \status -> do
---         when (status /= NotConnected) . ioError . userError $
---           "accept: can't peform connect on socket in status " ++ show status
---         let protoEnum = cToEnum proto
---         btPort <- mkPort protoEnum bdaddr portNum
---         case protoEnum of
---              L2CAP  -> 
---              RFCOMM -> 
---   where
---     callConnect :: SockAddrPtr p => Int
-
 bluetoothConnect :: Socket -> BluetoothAddr -> BluetoothPort -> IO ()
 bluetoothConnect = assignSocket c_connect "connect"
--- bluetoothConnect sock@(MkSocket _ _ _ proto _) =
---   let connect' = case cToEnum proto of
---                       L2CAP  -> assignSocket {#sizeof sockaddr_l2_t #}
---                                              {#set sockaddr_l2_t.l2_family #}
---                                              c_sockaddr_l2_set_bdaddr
---                                              {#set sockaddr_l2_t.l2_psm #}
---                                              c_connect
---                       RFCOMM -> assignSocket {#sizeof sockaddr_rc_t #}
---                                              {#set sockaddr_rc_t.rc_family #}
---                                              c_sockaddr_rc_set_bdaddr
---                                              {#set sockaddr_rc_t.rc_channel #}
---                                              c_connect
---   in connect' "connect" sock     
 
 bluetoothSocketPort :: Socket -> IO BluetoothPort
 bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
@@ -213,21 +115,6 @@ bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
     callGetSockName (MkSocket fd _ _ _ _) sockaddrPtr size = do
         throwErrnoIf_ ((== -1) . fst) "getsockname" $ c_getsockname fd sockaddrPtr size
         fmap sockAddrPort $ peek sockaddrPtr
---          L2CAP  -> callGetSockName {#sizeof sockaddr_l2_t #}
---                                    ({#get sockaddr_l2_t.l2_psm #} :: SockAddrL2CAPPtr -> IO CUShort)
---                                    L2CAPPort
---          RFCOMM -> callGetSockName {#sizeof sockaddr_rc_t #}
---                                    ({#get sockaddr_rc_t.rc_channel #} :: SockAddrRFCOMMPtr -> IO {#type uint8_t #})
---                                    RFCOMMPort
---   where
---     callGetSockName :: (Integral i, Integral j, SockAddrBluetooth p) =>
---                        Int
---                     -> (Ptr p -> IO i)
---                     -> (j -> BluetoothPort)
---                     -> IO BluetoothPort
---     callGetSockName size getter portCon = allocaBytes size $ \sockaddrPtr -> do
---         throwErrnoIf_ ((== -1) . fst) "getsockname" $ c_getsockname fd sockaddrPtr size
---         fmap portCon $ getFromIntegral getter sockaddrPtr 
 
 {#fun unsafe socket as c_socket
   { packFamily     `Family'
