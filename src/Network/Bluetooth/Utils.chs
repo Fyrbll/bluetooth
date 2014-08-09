@@ -34,7 +34,6 @@ import           Data.Word (Word32)
 
 import           Foreign.C.Error
 import           Foreign.C.Types hiding (CSize)
-import           Foreign.Marshal.Alloc
 import           Foreign.Marshal.Array
 import           Foreign.Marshal.Utils
 import           Foreign.Ptr
@@ -134,12 +133,6 @@ byteSwap32 (W32# w#) = W32# (narrow32Word# (byteSwap32# w#))
 #endif
 
 -------------------------------------------------------------------------------
-
--- allocaLenPtrConv :: (Integral i, Num n, Storable n) => ((p, Ptr n) -> IO a) -> (p, i) -> IO a
--- allocaLenPtrConv f (valPtr, len) = allocaBytes (sizeOf (undefined :: CLLong)) -- The largest C integral size
---   $ \lenPtr -> do
---     poke lenPtr $ fromIntegral len
---     f (valPtr, lenPtr)
 
 mapFst :: (a1 -> a2) -> (a1, b) -> (a2, b)
 mapFst f (x, y) = (f x, y)
