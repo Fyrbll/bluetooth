@@ -2,8 +2,9 @@ module Main where
 
 import Control.Exception
 
+import Data.Set
+
 import Network.Bluetooth
-import Network.Bluetooth.UUID
 import Network.Socket
 
 import System.IO
@@ -20,11 +21,12 @@ main :: IO ()
 main = withSocketsDo $ do
     let backlog  = 1
         proto    = RFCOMM
-        uuid     = serialPortServiceClassUUID
+        uuid     = serialPortServiceClassUUID -- TODO: Change to better UUID
         settings = defaultSDPInfo {
-            sdpServiceName  = Just "Roto-Rooter Data Router"
-          , sdpProviderName = Just "Roto-Rooter"
-          , sdpDescription  = Just "An experimental plumbing router"
+            sdpServiceName    = Just "Roto-Rooter Data Router"
+          , sdpProviderName   = Just "Roto-Rooter"
+          , sdpDescription    = Just "An experimental plumbing router"
+          , sdpServiceClasses = fromList [serialPortServiceClassUUID] -- TODO: Add better uuid to list
         }
         messLen  = 4096
     handshakeSock <- commentate "Calling socket" $ bluetoothSocket proto

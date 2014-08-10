@@ -1,9 +1,11 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, MagicHash #-}
 module Network.Bluetooth.UUID (
     -- * Short UUIDs
       ShortUUID
     , fromShortUUID
     , toShortUUID
+    , isReservedUUID
+    , byteSwap32
     -- * Base UUID
     ,  baseUUID
      -- * Protocol identifiers
@@ -114,16 +116,42 @@ module Network.Bluetooth.UUID (
 #endif
     ) where
 
-import Data.UUID
-import Data.Word
+import           Data.UUID
+import qualified Data.Word as W
+import           Data.Word (Word16, Word32)
+
+#if __GLASGOW_HASKELL__ < 708
+import           GHC.Prim
+import           GHC.Word
+#endif
 
 type ShortUUID = Word16
 
+baseUUIDWord2, baseUUIDWord3, baseUUIDWord4 :: Word32
+baseUUIDWord2 = 0x00001000
+baseUUIDWord3 = 0x80000080
+baseUUIDWord4 = 0x5F9B34FB
+
 fromShortUUID :: ShortUUID -> UUID
-fromShortUUID su = fromWords (fromIntegral su) 0x00001000 0x80000080 0x5F9B34FB
+fromShortUUID su = fromWords (fromIntegral su) baseUUIDWord2 baseUUIDWord3 baseUUIDWord4
 
 toShortUUID :: UUID -> ShortUUID
-toShortUUID uuid = case toWords uuid of (w1,_,_,_) -> fromIntegral w1
+toShortUUID uuid = let (w1,_,_,_) = toWords uuid
+                    in fromIntegral w1
+
+isReservedUUID :: UUID -> Bool
+isReservedUUID uuid = let (w1,w2,w3,w4) = toWords uuid
+  in (fromIntegral $ byteSwap32 w1) == (0x0000 :: Word16)
+  && w2 == baseUUIDWord2
+  && w3 == baseUUIDWord3
+  && w4 == baseUUIDWord4
+
+byteSwap32 :: Word32 -> Word32
+#if __GLASGOW_HASKELL__ >= 708
+byteSwap32 = W.byteSwap32
+#else
+byteSwap32 (W32# w#) = W32# (narrow32Word# (byteSwap32# w#))
+#endif
 
 baseUUID,
   sdpProtocolUUID,

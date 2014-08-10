@@ -22,9 +22,10 @@ cabal-version:       >=1.10
 executable bluetooth-example-rfcomm-server
   buildable:           True
   main-is:             Main.hs  
-  build-depends:       base >= 3 && < 5,
-                       bluetooth,
-                       network
+  build-depends:       base >= 3 && < 5
+                     , bluetooth
+                     , containers
+                     , network
   hs-source-dirs:      rfcomm-server
   default-language:    Haskell2010
   GHC-options:         -Wall -threaded
