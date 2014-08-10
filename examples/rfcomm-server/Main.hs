@@ -21,12 +21,12 @@ main :: IO ()
 main = withSocketsDo $ do
     let backlog  = 1
         proto    = RFCOMM
-        uuid     = serialPortServiceClassUUID -- TODO: Change to better UUID
+        uuid     = serviceClassToUUID SerialPort -- TODO: Change to better UUID
         settings = defaultSDPInfo {
             sdpServiceName    = Just "Roto-Rooter Data Router"
           , sdpProviderName   = Just "Roto-Rooter"
           , sdpDescription    = Just "An experimental plumbing router"
-          , sdpServiceClasses = fromList [serialPortServiceClassUUID] -- TODO: Add better uuid to list
+          , sdpServiceClasses = fromList [SerialPort] -- TODO: Add better uuid to list
         }
         messLen  = 4096
     handshakeSock <- commentate "Calling socket" $ bluetoothSocket proto

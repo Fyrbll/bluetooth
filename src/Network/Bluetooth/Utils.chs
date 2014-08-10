@@ -26,25 +26,27 @@ module Network.Bluetooth.Utils
   , withLenConv
   ) where
 
-import           Control.Monad
+import Control.Monad
 
-import           Foreign.C.Error
-import           Foreign.C.Types hiding (CSize)
-import           Foreign.Marshal.Array
-import           Foreign.Marshal.Utils
-import           Foreign.Ptr
-import           Foreign.Storable
+import Foreign.C.Error
+import Foreign.C.Types hiding (CSize)
+import Foreign.Marshal.Array
+import Foreign.Marshal.Utils
+import Foreign.Ptr
+import Foreign.Storable
 
-import           System.IO.Unsafe
+import System.IO.Unsafe
 
 #include <stddef.h>
 
 -- | Remove this when <https://github.com/haskell/c2hs/issues/20 this issue> is resolved
 type CSize = {#type size_t #}
 
+-- TODO: Rename this to something more sensible.
 cToEnum :: (Integral i, Enum e) => i -> e
 cToEnum = toEnum . fromIntegral
 
+-- TODO: Rename this to something more sensible.
 cFromEnum :: (Enum e, Integral i) => e -> i
 cFromEnum = fromIntegral . fromEnum
 

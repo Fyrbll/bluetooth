@@ -28,15 +28,13 @@ import           Network.Bluetooth.UUID
 #include "wr_sdp_lib.h"
 
 registerSDPService :: UUID -> SDPInfo -> BluetoothProtocol -> BluetoothPort -> IO SDPSessionPtr
-registerSDPService uuid info proto port = do
+registerSDPService uuid info btProto port = do
     -- TODO: Check if service is already being advertised
-    let uuidSize              = {#sizeof uuid_t #}
-        -- TODO: Put toShortUUID in here
-        sdpUUID16Create uuid' = throwErrnoIfNull_ "sdp_uuid16_create" . c_sdp_uuid16_create uuid'
-        sdpListAppend list    = throwErrnoIfNull "sdp_list_append" . c_sdp_list_append list
-        sdpListAppend_ list   = void . sdpListAppend list
-        setFoldM q s f         = foldM f q $ S.toList s
-        -- TODO: Inline this
+    let uuidSize                     = {#sizeof uuid_t #}
+        sdpUUID16Create uuid'        = throwErrnoIfNull_ "sdp_uuid16_create" . c_sdp_uuid16_create uuid'
+        sdpListAppend list           = throwErrnoIfNull "sdp_list_append" . c_sdp_list_append list
+        sdpListAppend_ list          = void . sdpListAppend list
+        setFoldM q s f               = foldM f q $ S.toList s
         sdpUUID128Create cUuid hUuid = withUUIDArray hUuid $
           throwErrnoIfNull_ "sdp_uuid128_create" . c_sdp_uuid128_create cUuid
     
@@ -53,17 +51,17 @@ registerSDPService uuid info proto port = do
           {#set sdp_record_t.handle #} record 0xffffffff
           
           -- Make the record publicly browsable
-          sdpUUID16Create rootUuid $ toShortUUID publicBrowseGroupServiceClassUUID
+          sdpUUID16Create rootUuid PublicBrowseGroup
           rootList <- sdpListAppend nullPtr rootUuid
           throwErrnoIfNegative_ "sdp_set_browse_groups" $
             c_sdp_set_browse_groups record rootList
           
           -- Set L2CAP information (always happens)
-          sdpUUID16Create l2capUuid $ toShortUUID l2capProtocolUUID
+          sdpUUID16Create l2capUuid L2CAPProtocol
           l2capList <- sdpListAppend nullPtr l2capUuid
           protoList <- sdpListAppend nullPtr l2capList
           
-          portData <- case proto of
+          portData <- case btProto of
               L2CAP -> do
                   -- Register the L2CAP PSM
                   psm <- with port $ c_sdp_data_alloc SDPCUInt16
@@ -71,19 +69,19 @@ registerSDPService uuid info proto port = do
                   return $ Left psm
               RFCOMM -> do
                   -- Register the RFCOMM channel
-                  sdpUUID16Create rfcommUuid $ toShortUUID rfcommProtocolUUID
+                  sdpUUID16Create rfcommUuid RFCOMMProtocol
                   channel <- with port $ c_sdp_data_alloc SDPCUInt8
                   rfcommList <- sdpListAppend nullPtr rfcommUuid
                   sdpListAppend_ rfcommList channel
                   sdpListAppend_ protoList rfcommList
                   return $ Right (channel, rfcommList)
           
-          -- Add additional protocols
+          -- Add additional UUID protocols
           (extraProtosList, protoList') <- setFoldM ([], protoList) (sdpExtraProtocols info)
-              $ \(extraProtosList, protoList') hProtoUuid -> do
-                  cProtoUuid <- mallocBytes uuidSize
-                  sdpUUID16Create cProtoUuid $ toShortUUID hProtoUuid
-                  newList <- sdpListAppend nullPtr cProtoUuid
+              $ \(extraProtosList, protoList') hUUIDProto -> do
+                  cUUIDProto <- mallocBytes uuidSize
+                  sdpUUID16Create cUUIDProto hUUIDProto
+                  newList <- sdpListAppend nullPtr cUUIDProto
                   protoList'' <- sdpListAppend protoList' newList
                   return (newList : extraProtosList, protoList'')
           
@@ -91,21 +89,20 @@ registerSDPService uuid info proto port = do
           throwErrnoIfNegative_ "sdp_set_access_protos" $
             c_sdp_set_access_protos record accessProtoList
           
-          -- Add service classes
+          -- Add UUID service classes
           svcClassList <- setFoldM nullPtr (sdpServiceClasses info)
-              $ \svcClassList hSvcClassUuid -> do
-                  cSvcClassUuid <- mallocBytes uuidSize
-                  if isReservedUUID hSvcClassUuid
-                     then sdpUUID16Create  cSvcClassUuid $ toShortUUID hSvcClassUuid
-                     else sdpUUID128Create cSvcClassUuid hSvcClassUuid
-                  sdpListAppend svcClassList cSvcClassUuid
+              $ \svcClassList hUUIDSvcClass -> do
+                  cUUIDSvcClass <- mallocBytes uuidSize
+                  let hUUID = serviceClassToUUID hUUIDSvcClass
+                  if isReservedUUID hUUID
+                     then sdpUUID16Create  cUUIDSvcClass hUUIDSvcClass
+                     else sdpUUID128Create cUUIDSvcClass hUUID
+                  sdpListAppend svcClassList cUUIDSvcClass
           
---           sdpUUID16Create svcClassUuid $ toShortUUID serialPortServiceClassUUID
---           svcClassList <- sdpListAppend nullPtr svcClassUuid
           throwErrnoIfNegative_ "sdp_set_service_classes" $
             c_sdp_set_service_classes record svcClassList
           
-          sdpUUID16Create (c_sdp_profile_desc_get_uuid profile) SerialPortProfileID
+          sdpUUID16Create (c_sdp_profile_desc_get_uuid profile) SerialPort
           {#set sdp_profile_desc_t.version #} profile 0x0100
           profileList <- sdpListAppend nullPtr profile
           throwErrnoIfNegative_ "sdp_set_profile_descs" $
@@ -146,8 +143,8 @@ data SDPInfo = SDPInfo {
     sdpServiceName    :: Maybe String
   , sdpProviderName   :: Maybe String
   , sdpDescription    :: Maybe String
-  , sdpExtraProtocols :: Set UUID
-  , sdpServiceClasses :: Set UUID
+  , sdpExtraProtocols :: Set UUIDProtocol
+  , sdpServiceClasses :: Set UUIDServiceClass
 } deriving (Read, Ord, Show, Eq)
 
 defaultSDPInfo :: SDPInfo
@@ -169,9 +166,9 @@ withUUIDArray :: UUID -> (Ptr CUInt32 -> IO a) -> IO a
 withUUIDArray uuid = let (w1,w2,w3,w4) = U.toWords uuid
                       in withArray $ map (fromIntegral . byteSwap32) [w1,w2,w3,w4]
 
-{#enum define ProfileID {
-    SERIAL_PORT_PROFILE_ID as SerialPortProfileID
-  } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
+-- {#enum define ProfileID {
+--     SERIAL_PORT_PROFILE_ID as SerialPortProfileID
+--   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
 {#enum define SDPDataRep {
     SDP_UINT8  as SDPCUInt8
