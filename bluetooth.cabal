@@ -35,6 +35,7 @@ library
     other-modules:
   build-depends:       base >= 3 && < 5
                      , binary
+                     , containers
                      , network
                      , network-info
                      , uuid

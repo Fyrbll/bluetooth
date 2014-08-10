@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MagicHash, TupleSections #-}
+{-# LANGUAGE TupleSections #-}
 module Network.Bluetooth.Utils
   ( cToEnum
   , cFromEnum
@@ -24,13 +24,9 @@ module Network.Bluetooth.Utils
   , withCastLenConv
   , withLen
   , withLenConv
-  , byteSwap32
   ) where
 
 import           Control.Monad
-
-import qualified Data.Word as W
-import           Data.Word (Word32)
 
 import           Foreign.C.Error
 import           Foreign.C.Types hiding (CSize)
@@ -38,11 +34,6 @@ import           Foreign.Marshal.Array
 import           Foreign.Marshal.Utils
 import           Foreign.Ptr
 import           Foreign.Storable
-
-#if __GLASGOW_HASKELL__ < 708
-import           GHC.Prim
-import           GHC.Word
-#endif
 
 import           System.IO.Unsafe
 
@@ -124,13 +115,6 @@ withLen val f = with val $ f . (, fromIntegral $ sizeOf val)
 
 withLenConv :: (Num n, Storable s) => s -> ((Ptr s, n) -> IO a) -> IO a
 withLenConv val f = withLen val $ f . mapSnd fromIntegral
-
-byteSwap32 :: Word32 -> Word32
-#if __GLASGOW_HASKELL__ >= 708
-byteSwap32 = W.byteSwap32
-#else
-byteSwap32 (W32# w#) = W32# (narrow32Word# (byteSwap32# w#))
-#endif
 
 -------------------------------------------------------------------------------
 

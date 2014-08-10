@@ -19,6 +19,7 @@ commentate str io = do
 main :: IO ()
 main = withSocketsDo $ do
     let backlog  = 1
+        proto    = RFCOMM
         uuid     = serialPortServiceClassUUID
         settings = defaultSDPInfo {
             sdpServiceName  = Just "Roto-Rooter Data Router"
@@ -26,7 +27,7 @@ main = withSocketsDo $ do
           , sdpDescription  = Just "An experimental plumbing router"
         }
         messLen  = 4096
-    handshakeSock <- commentate "Calling socket" $ bluetoothSocket RFCOMM
+    handshakeSock <- commentate "Calling socket" $ bluetoothSocket proto
     btPort <- commentate "Calling bind" $ bluetoothBindAnyPort handshakeSock anyAddr
     
     putStrLn $ "Bound on port " ++ show btPort
@@ -36,7 +37,7 @@ main = withSocketsDo $ do
     commentate ("Calling listen with backlog " ++ show backlog) $
       bluetoothListen handshakeSock backlog
     service <- commentate ("Registering SDP service " ++ show uuid) $
-      registerSDPService uuid settings btPort
+      registerSDPService uuid settings proto btPort
     (connSock, connAddr) <- commentate "Calling accept" $
       bluetoothAccept handshakeSock
       

@@ -1,13 +1,21 @@
+{-# LANGUAGE CPP #-}
 module Network.Bluetooth.UUID (
-    -- * Protocol identifiers
-      baseUUID
+    -- * Short UUIDs
+      ShortUUID
+    , fromShortUUID
+    , toShortUUID
+    -- * Base UUID
+    ,  baseUUID
+     -- * Protocol identifiers
     , sdpProtocolUUID
     , udpProtocolUUID
     , rfcommProtocolUUID
     , tcpProtocolUUID
     , tcsBinProtocolUUID
     , tcsAtProtocolUUID
+#if defined(linux_HOST_OS)
     , attProtocolUUID
+#endif
     , obexProtocolUUID
     , ipProtocolUUID
     , ftpProtocolUUID
@@ -15,19 +23,25 @@ module Network.Bluetooth.UUID (
     , wspProtocolUUID
     , bnepProtocolUUID
     , upnpProtocolUUID
+#if !defined(mingw32_HOST_OS)
     , hidpProtocolUUID
+#endif
     , hardcopyControlChannelProtocolUUID
     , hardcopyDataChannelProtocolUUID
     , hardcopyNotificationProtocolUUID
     , avctpProtocolUUID
     , avdtpProtocolUUID
     , cmtpProtocolUUID
+    , udiCPlaneProtocolUUID
+#if defined(linux_HOST_OS)
     , mcapControlChannelProtocolUUID
     , mcapDataChannelProtocolUUID
+#endif
     , l2capProtocolUUID
     -- * Service classes
-    , serviceDiscoveryServerServiceClassIdUUID
-    , browseGroupsDescriptorServiceClassIdUUID
+    , serviceDiscoveryServerServiceClassUUID
+    , browseGroupsDescriptorServiceClassUUID
+    , publicBrowseGroupServiceClassUUID
     , serialPortServiceClassUUID
     , lanAccessUsingPPPServiceClassUUID
     , dialupNetworkingServiceClassUUID
@@ -68,26 +82,20 @@ module Network.Bluetooth.UUID (
     , hcrPrintServiceClassUUID
     , hcrScanServiceClassUUID
     , commonISDNAccessServiceClassUUID
+    , videoConferencingGWServiceClassUUID
+    , udiMTServiceClassUUID
+    , udiTAServiceClassUUID
+    , audioVideoServiceClassUUID
     , simAccessServiceClassUUID
     , phonebookAccessPCEServiceClassUUID
     , phonebookAccessPSEServiceClassUUID
     , phonebookAccessServiceClassUUID
-    , headsetHSServiceClassUUID
-    , messageAccessServerServiceClassUUID
-    , messageNotificationServerServiceClassUUID
-    , messageAccessProfileServiceClassUUID
-    , gnssServiceClassUUID
-    , gnssServerServiceClassUUID
-    , threeDDisplayServiceClassUUID
-    , threeDGlassesServiceClassUUID
-    , threeDSynchronizationServiceClassUUID
-    , mpsProfileServiceClassUUID
-    , mpsServiceClassUUID
     , pnPInformationServiceClassUUID
     , genericNetworkingServiceClassUUID
     , genericFileTransferServiceClassUUID
     , genericAudioServiceClassUUID
     , genericTelephonyServiceClassUUID
+#if !defined(mingw32_HOST_OS)
     , upnpServiceClassUUID
     , upnpIPServiceClassUUID
     , esdpUpnpIpPANServiceClassUUID
@@ -96,9 +104,14 @@ module Network.Bluetooth.UUID (
     , videoSourceServiceClassUUID
     , videoSinkServiceClassUUID
     , videoDistributionServiceClassUUID
+#if defined(linux_HOST_OS)
     , hdpServiceClassUUID
     , hdpSourceServiceClassUUID
     , hdpSinkServiceClassUUID
+    , appleAgentServiceClassUUID
+    , genericAttribServiceClassUUID
+#endif
+#endif
     ) where
 
 import Data.UUID
@@ -108,6 +121,9 @@ type ShortUUID = Word16
 
 fromShortUUID :: ShortUUID -> UUID
 fromShortUUID su = fromWords (fromIntegral su) 0x00001000 0x80000080 0x5F9B34FB
+
+toShortUUID :: UUID -> ShortUUID
+toShortUUID uuid = case toWords uuid of (w1,_,_,_) -> fromIntegral w1
 
 baseUUID,
   sdpProtocolUUID,
@@ -131,6 +147,7 @@ baseUUID,
   avctpProtocolUUID,
   avdtpProtocolUUID,
   cmtpProtocolUUID,
+  udiCPlaneProtocolUUID,
   mcapControlChannelProtocolUUID,
   mcapDataChannelProtocolUUID,
   l2capProtocolUUID :: UUID
@@ -163,14 +180,15 @@ baseUUID,
   _,
   cmtpProtocolUUID,
   _,
-  _,
+  udiCPlaneProtocolUUID,
   mcapControlChannelProtocolUUID,
   mcapDataChannelProtocolUUID]
     = map fromShortUUID [0x0000..0x001F]
 l2capProtocolUUID = fromShortUUID 0x0100
 
-serviceDiscoveryServerServiceClassIdUUID,
-  browseGroupsDescriptorServiceClassIdUUID,
+serviceDiscoveryServerServiceClassUUID,
+  browseGroupsDescriptorServiceClassUUID,
+  publicBrowseGroupServiceClassUUID,
   serialPortServiceClassUUID,
   lanAccessUsingPPPServiceClassUUID,
   dialupNetworkingServiceClassUUID,
@@ -211,25 +229,23 @@ serviceDiscoveryServerServiceClassIdUUID,
   hcrPrintServiceClassUUID,
   hcrScanServiceClassUUID,
   commonISDNAccessServiceClassUUID,
+  videoConferencingGWServiceClassUUID,
+  udiMTServiceClassUUID,
+  udiTAServiceClassUUID,
+  audioVideoServiceClassUUID,
+#if !defined(mingw32_HOST_OS)
   simAccessServiceClassUUID,
   phonebookAccessPCEServiceClassUUID,
   phonebookAccessPSEServiceClassUUID,
   phonebookAccessServiceClassUUID,
-  headsetHSServiceClassUUID,
-  messageAccessServerServiceClassUUID,
-  messageNotificationServerServiceClassUUID,
-  messageAccessProfileServiceClassUUID,
-  gnssServiceClassUUID,
-  gnssServerServiceClassUUID,
-  threeDDisplayServiceClassUUID,
-  threeDGlassesServiceClassUUID,
-  threeDSynchronizationServiceClassUUID,
-  mpsProfileServiceClassUUID,
-  mpsServiceClassUUID,
+#endif
   pnPInformationServiceClassUUID,
   genericNetworkingServiceClassUUID,
   genericFileTransferServiceClassUUID,
   genericAudioServiceClassUUID,
+#if defined(mingw32_HOST_OS)
+  genericTelephonyServiceClassUUID
+#else
   genericTelephonyServiceClassUUID,
   upnpServiceClassUUID,
   upnpIPServiceClassUUID,
@@ -239,11 +255,18 @@ serviceDiscoveryServerServiceClassIdUUID,
   videoSourceServiceClassUUID,
   videoSinkServiceClassUUID,
   videoDistributionServiceClassUUID,
+#if defined(linux_HOST_OS)
   hdpServiceClassUUID,
   hdpSourceServiceClassUUID,
-  hdpSinkServiceClassUUID :: UUID
-serviceDiscoveryServerServiceClassIdUUID = fromShortUUID 0x1000
-browseGroupsDescriptorServiceClassIdUUID = fromShortUUID 0x1001
+  hdpSinkServiceClassUUID,
+  appleAgentServiceClassUUID,
+  genericAttribServiceClassUUID
+#endif
+#endif
+    :: UUID
+serviceDiscoveryServerServiceClassUUID = fromShortUUID 0x1000
+browseGroupsDescriptorServiceClassUUID = fromShortUUID 0x1001
+publicBrowseGroupServiceClassUUID      = fromShortUUID 0x1002
 [serialPortServiceClassUUID,
   lanAccessUsingPPPServiceClassUUID,
   dialupNetworkingServiceClassUUID,
@@ -284,27 +307,28 @@ browseGroupsDescriptorServiceClassIdUUID = fromShortUUID 0x1001
   hcrPrintServiceClassUUID,
   hcrScanServiceClassUUID,
   commonISDNAccessServiceClassUUID,
-  _, _, _, _,
+  videoConferencingGWServiceClassUUID,
+  udiMTServiceClassUUID,
+  udiTAServiceClassUUID,
+#if !defined(mingw32_HOST_OS)
+  audioVideoServiceClassUUID,
   simAccessServiceClassUUID,
   phonebookAccessPCEServiceClassUUID,
   phonebookAccessPSEServiceClassUUID,
-  phonebookAccessServiceClassUUID,
-  headsetHSServiceClassUUID,
-  messageAccessServerServiceClassUUID,
-  messageNotificationServerServiceClassUUID,
-  messageAccessProfileServiceClassUUID,
-  gnssServiceClassUUID,
-  gnssServerServiceClassUUID,
-  threeDDisplayServiceClassUUID,
-  threeDGlassesServiceClassUUID,
-  threeDSynchronizationServiceClassUUID,
-  mpsProfileServiceClassUUID,
-  mpsServiceClassUUID]
-    = map fromShortUUID [0x1101..0x113B]
+  phonebookAccessServiceClassUUID]
+    = map fromShortUUID [0x1101..0x1130]
+#else
+  audioVideoServiceClassUUID]
+    = map fromShortUUID [0x1101..0x112C]
+#endif
 [pnPInformationServiceClassUUID,
   genericNetworkingServiceClassUUID,
   genericFileTransferServiceClassUUID,
   genericAudioServiceClassUUID,
+#if defined(mingw32_HOST_OS)
+  genericTelephonyServiceClassUUID]
+    = map fromShortUUID [0x1300..0x1204]
+#else
   genericTelephonyServiceClassUUID,
   upnpServiceClassUUID,
   upnpIPServiceClassUUID]
@@ -316,7 +340,12 @@ browseGroupsDescriptorServiceClassIdUUID = fromShortUUID 0x1001
   videoSinkServiceClassUUID,
   videoDistributionServiceClassUUID]
     = map fromShortUUID [0x1300..0x1305]
+#if defined(linux_HOST_OS)
 [hdpServiceClassUUID,
   hdpSourceServiceClassUUID,
   hdpSinkServiceClassUUID]
     = map fromShortUUID [0x1400..0x1402]
+appleAgentServiceClassUUID    = fromShortUUID 0x2112
+genericAttribServiceClassUUID = fromShortUUID 0x1801
+#endif
+#endif
