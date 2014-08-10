@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module Network.Bluetooth.Linux.SDP where
 
 import           Control.Monad
@@ -72,9 +73,11 @@ registerSDPService uuid info port = do
           throwErrnoIfNegative_ "sdp_set_access_protos" $
             c_sdp_set_access_protos record accessProtoList
           
-          case info of
-               (SDPAttributes sn pn d) -> c_sdp_set_info_attr record sn pn d
-               SDPNoInfo               -> return ()
+          case info of SDPInfo {
+              sdpServiceName  = name
+            , sdpProviderName = prov
+            , sdpDescription  = desc
+          } -> c_sdp_set_info_attr record name prov desc
           
           session <- throwErrnoIfNull "sdp_connect" $
             c_sdp_connect anyAddr localAddr SDPRetryIfBusy
@@ -93,13 +96,18 @@ registerSDPService uuid info port = do
 closeSDPService :: SDPSessionPtr -> IO ()
 closeSDPService = throwErrnoIfMinus1_ "sdp_close" . c_sdp_close
 
-data SDPInfo = SDPAttributes {
-                 serviceName  :: String
-               , providerName :: String
-               , description  :: String
-             }
-             | SDPNoInfo
-  deriving (Read, Show)
+data SDPInfo = SDPInfo {
+    sdpServiceName  :: Maybe String
+  , sdpProviderName :: Maybe String
+  , sdpDescription  :: Maybe String
+} deriving (Read, Ord, Show, Eq)
+
+defaultSDPInfo :: SDPInfo
+defaultSDPInfo = SDPInfo {
+    sdpServiceName  = Nothing
+  , sdpProviderName = Nothing
+  , sdpDescription  = Nothing
+}
 
 type SDPFreeFunPtr = {#type sdp_free_func_t #}
 
@@ -195,11 +203,14 @@ data C_SDPSession
   } -> `Int' #}
 
 {#fun unsafe sdp_set_info_attr as c_sdp_set_info_attr
-  {    `SDPRecordPtr'
-  ,    `String'
-  ,    `String'
-  ,    `String'
-  } -> `()' #}
+  {                   `SDPRecordPtr'
+  , maybeWithCString* `Maybe String'
+  , maybeWithCString* `Maybe String'
+  , maybeWithCString* `Maybe String'
+  }                -> `()' #}
+  where
+    maybeWithCString :: Maybe String -> (CString -> IO a) -> IO a
+    maybeWithCString = maybeWith withCString
 
 {#fun unsafe wr_sdp_connect as c_sdp_connect
   `Enum e' =>

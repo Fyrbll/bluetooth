@@ -20,7 +20,11 @@ main :: IO ()
 main = withSocketsDo $ do
     let backlog  = 1
         uuid     = serialPortServiceClassUUID
-        settings = SDPAttributes "Roto-Rooter Data Router" "Roto-Rooter" "An experimental plumbing router"
+        settings = defaultSDPInfo {
+            sdpServiceName  = Just "Roto-Rooter Data Router"
+          , sdpProviderName = Just "Roto-Rooter"
+          , sdpDescription  = Just "An experimental plumbing router"
+        }
         messLen  = 4096
     handshakeSock <- commentate "Calling socket" $ bluetoothSocket RFCOMM
     btPort <- commentate "Calling bind" $ bluetoothBindAnyPort handshakeSock anyAddr
