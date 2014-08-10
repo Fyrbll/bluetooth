@@ -26,7 +26,7 @@ main = withSocketsDo $ do
             sdpServiceName    = Just "Roto-Rooter Data Router"
           , sdpProviderName   = Just "Roto-Rooter"
           , sdpDescription    = Just "An experimental plumbing router"
-          , sdpServiceClasses = fromList [SerialPort] -- TODO: Add better uuid to list
+          , sdpServiceClasses = singleton SerialPort
         }
         messLen  = 4096
     handshakeSock <- commentate "Calling socket" $ bluetoothSocket proto

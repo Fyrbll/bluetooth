@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Network.Bluetooth.Linux.SDP where
 
 import           Control.Monad
@@ -42,7 +42,7 @@ registerSDPService uuid info btProto port = do
       allocaBytes uuidSize                       $ \l2capUuid    ->
       allocaBytes uuidSize                       $ \rfcommUuid   ->
       allocaBytes uuidSize                       $ \svcUuid      ->
---       allocaBytes uuidSize                       $ \svcClassUuid ->
+      allocaBytes uuidSize                       $ \svcClassUuid ->
       allocaBytes {#sizeof sdp_profile_desc_t #} $ \profile      ->
       allocaBytes {#sizeof sdp_record_t #}       $ \record       -> do
           -- Convert the UUID to a uuid_t
@@ -90,17 +90,20 @@ registerSDPService uuid info btProto port = do
             c_sdp_set_access_protos record accessProtoList
           
           -- Add UUID service classes
-          svcClassList <- setFoldM nullPtr (sdpServiceClasses info)
-              $ \svcClassList hUUIDSvcClass -> do
+          svcClassList <- if (sdpRegisterUUIDAsServiceClass info)
+            then do
+                sdpUUID128Create svcClassUuid uuid
+                sdpListAppend nullPtr svcClassUuid
+            else return nullPtr
+          
+          svcClassList' <- setFoldM svcClassList (sdpServiceClasses info)
+              $ \svcClassList' hUUIDSvcClass -> do
                   cUUIDSvcClass <- mallocBytes uuidSize
-                  let hUUID = serviceClassToUUID hUUIDSvcClass
-                  if isReservedUUID hUUID
-                     then sdpUUID16Create  cUUIDSvcClass hUUIDSvcClass
-                     else sdpUUID128Create cUUIDSvcClass hUUID
-                  sdpListAppend svcClassList cUUIDSvcClass
+                  sdpUUID16Create cUUIDSvcClass hUUIDSvcClass
+                  sdpListAppend svcClassList' cUUIDSvcClass
           
           throwErrnoIfNegative_ "sdp_set_service_classes" $
-            c_sdp_set_service_classes record svcClassList
+            c_sdp_set_service_classes record svcClassList'
           
           sdpUUID16Create (c_sdp_profile_desc_get_uuid profile) SerialPort
           {#set sdp_profile_desc_t.version #} profile 0x0100
@@ -132,7 +135,7 @@ registerSDPService uuid info btProto port = do
             forM_ extraProtosList $ flip c_sdp_list_free freeFunPtr
             c_sdp_list_free rootList nullFunPtr
             c_sdp_list_free accessProtoList nullFunPtr
-            c_sdp_list_free svcClassList nullFunPtr
+            c_sdp_list_free svcClassList' nullFunPtr
             c_sdp_list_free profileList nullFunPtr
           return session
 
@@ -140,20 +143,22 @@ closeSDPService :: SDPSessionPtr -> IO ()
 closeSDPService = throwErrnoIfMinus1_ "sdp_close" . c_sdp_close
 
 data SDPInfo = SDPInfo {
-    sdpServiceName    :: Maybe String
-  , sdpProviderName   :: Maybe String
-  , sdpDescription    :: Maybe String
-  , sdpExtraProtocols :: Set UUIDProtocol
-  , sdpServiceClasses :: Set UUIDServiceClass
+    sdpServiceName                :: Maybe String
+  , sdpProviderName               :: Maybe String
+  , sdpDescription                :: Maybe String
+  , sdpExtraProtocols             :: Set UUIDProtocol
+  , sdpServiceClasses             :: Set UUIDServiceClass
+  , sdpRegisterUUIDAsServiceClass :: Bool
 } deriving (Read, Ord, Show, Eq)
 
 defaultSDPInfo :: SDPInfo
 defaultSDPInfo = SDPInfo {
-    sdpServiceName    = Nothing
-  , sdpProviderName   = Nothing
-  , sdpDescription    = Nothing
-  , sdpExtraProtocols = S.empty
-  , sdpServiceClasses = S.empty
+    sdpServiceName                = Nothing
+  , sdpProviderName               = Nothing
+  , sdpDescription                = Nothing
+  , sdpExtraProtocols             = S.empty
+  , sdpServiceClasses             = S.empty
+  , sdpRegisterUUIDAsServiceClass = True
 }
 
 -------------------------------------------------------------------------------
@@ -165,10 +170,6 @@ type SDPFreeFunPtr = {#type sdp_free_func_t #}
 withUUIDArray :: UUID -> (Ptr CUInt32 -> IO a) -> IO a
 withUUIDArray uuid = let (w1,w2,w3,w4) = U.toWords uuid
                       in withArray $ map (fromIntegral . byteSwap32) [w1,w2,w3,w4]
-
--- {#enum define ProfileID {
---     SERIAL_PORT_PROFILE_ID as SerialPortProfileID
---   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
 {#enum define SDPDataRep {
     SDP_UINT8  as SDPCUInt8

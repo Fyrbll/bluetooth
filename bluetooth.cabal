@@ -38,6 +38,7 @@ library
                      , containers
                      , network
                      , network-info
+                     , random
                      , uuid
   if impl(ghc < 7.8)
     build-depends:     ghc-prim

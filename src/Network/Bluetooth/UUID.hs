@@ -1,15 +1,14 @@
 {-# LANGUAGE CPP, MagicHash #-}
 module Network.Bluetooth.UUID (
-    -- * Short UUIDs
       ShortUUID
     , fromShortUUID
     , toShortUUID
     , isReservedUUID
+    , randomUUID
     , protocolToUUID
     , serviceClassToUUID
     , byteSwap32
-    -- * Base UUID
-    ,  baseUUID
+    , baseUUID
     , UUIDProtocol(..)
     , UUIDServiceClass(..)
     , UUIDProfile
@@ -26,6 +25,8 @@ import           GHC.Word
 #endif
 
 import           Network.Bluetooth.Utils
+
+import           System.Random
 
 type ShortUUID = Word16
 
@@ -44,17 +45,24 @@ toShortUUID :: UUID -> ShortUUID
 toShortUUID uuid = let (w1,_,_,_) = toWords uuid
                     in fromIntegral w1
 
+randomUUID :: IO UUID
+randomUUID = do
+    uuid <- randomIO
+    if isReservedUUID uuid
+       then randomUUID
+       else return uuid
+
 isReservedUUID :: UUID -> Bool
 isReservedUUID uuid = let (w1,w2,w3,w4) = toWords uuid
     in (fromIntegral $ byteSwap32 w1) == (0x0000 :: Word16)
-    && isReserved (fromIntegral w1)
     && w2 == baseUUIDWord2
     && w3 == baseUUIDWord3
     && w4 == baseUUIDWord4
+    && isReserved (fromIntegral w1)
   where
     isReserved :: Word16 -> Bool
     isReserved w = any (flip inRange w)
-      [(0x0001, 0x000A), (0x000C, 0x000C), (0x000E, 0x0012), (0x0014, 0x0014),
+      [(0x0000, 0x000A), (0x000C, 0x000C), (0x000E, 0x0012), (0x0014, 0x0014),
        (0x0016, 0x0017), (0x0019, 0x0019), (0x001B, 0x001B), (0x001D, 0x001F),
        (0x0100, 0x0100), (0x1000, 0x1002), (0x1101, 0x113B), (0x1200, 0x1206),
        (0x1300, 0x1305), (0x1400, 0x1402), (0x1801, 0x1801), (0x2112, 0x2122)]
