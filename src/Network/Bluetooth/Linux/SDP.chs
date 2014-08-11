@@ -42,7 +42,6 @@ registerSDPService uuid info btProto port = do
       allocaBytes uuidSize                 $ \l2capUuid    ->
       allocaBytes uuidSize                 $ \rfcommUuid   ->
       allocaBytes uuidSize                 $ \svcUuid      ->
-      allocaBytes uuidSize                 $ \svcClassUuid ->
       allocaBytes {#sizeof sdp_record_t #} $ \record       -> do
           -- Convert the UUID to a uuid_t
           sdpUUID128Create svcUuid uuid
@@ -63,13 +62,13 @@ registerSDPService uuid info btProto port = do
           portData <- case btProto of
               L2CAP -> do
                   -- Register the L2CAP PSM
-                  psm <- with port $ c_sdp_data_alloc SDPCUInt16
+                  psm <- with port $ c_sdp_data_alloc SDP_CUInt16
                   sdpListAppend_ l2capList psm
                   return $ Left psm
               RFCOMM -> do
                   -- Register the RFCOMM channel
                   sdpUUID16Create rfcommUuid RFCOMMProtocol
-                  channel <- with port $ c_sdp_data_alloc SDPCUInt8
+                  channel <- with port $ c_sdp_data_alloc SDP_CUInt8
                   rfcommList <- sdpListAppend nullPtr rfcommUuid
                   sdpListAppend_ rfcommList channel
                   sdpListAppend_ protoList rfcommList
@@ -91,6 +90,7 @@ registerSDPService uuid info btProto port = do
           -- Add UUID service classes
           svcClassList <- if (sdpRegisterUUIDAsServiceClass info)
             then do
+                svcClassUuid <- mallocBytes uuidSize
                 sdpUUID128Create svcClassUuid uuid
                 sdpListAppend nullPtr svcClassUuid
             else return nullPtr
@@ -107,10 +107,10 @@ registerSDPService uuid info btProto port = do
           -- Add UUID profiles
           profileList <- setFoldM nullPtr (sdpProfiles info)
               $ \profileList profile -> do
-              profileDesc <- mallocBytes {#sizeof sdp_profile_desc_t #}
-              sdpUUID16Create (c_sdp_profile_desc_get_uuid profileDesc) profile
-              {#set sdp_profile_desc_t.version #} profileDesc 0x0100 -- Magic number
-              sdpListAppend profileList profileDesc
+                  profileDesc <- mallocBytes {#sizeof sdp_profile_desc_t #}
+                  sdpUUID16Create (c_sdp_profile_desc_get_uuid profileDesc) profile
+                  {#set sdp_profile_desc_t.version #} profileDesc 0x0100 -- Magic number
+                  sdpListAppend profileList profileDesc
           
           throwErrnoIfNegative_ "sdp_set_profile_descs" $
             c_sdp_set_profile_descs record profileList
@@ -134,18 +134,19 @@ registerSDPService uuid info btProto port = do
           
           -- Cleanup
           case portData of
-               Left psm -> c_sdp_data_free psm
+               Left psm -> do
+                   c_sdp_data_free psm
+                   c_sdp_list_free l2capList nullFunPtr
                Right (channel, rfcommList) -> do
                    c_sdp_data_free channel
+                   c_sdp_list_free l2capList nullFunPtr
                    c_sdp_list_free rfcommList nullFunPtr
           
-          withSDPFreeFunPtr free $ \freeFunPtr -> do
-            c_sdp_list_free l2capList nullFunPtr
-            forM_ extraProtosList $ flip c_sdp_list_free freeFunPtr
-            c_sdp_list_free rootList nullFunPtr
-            c_sdp_list_free accessProtoList nullFunPtr
-            c_sdp_list_free svcClassList' nullFunPtr
-            c_sdp_list_free profileList nullFunPtr
+          forM_ (reverse extraProtosList) $ flip c_sdp_list_free finalizerFree
+          c_sdp_list_free rootList nullFunPtr
+          c_sdp_list_free accessProtoList nullFunPtr
+          c_sdp_list_free svcClassList' finalizerFree
+          c_sdp_list_free profileList finalizerFree
           return session
 
 closeSDPService :: SDPSessionPtr -> IO ()
@@ -175,7 +176,6 @@ defaultSDPInfo = SDPInfo {
 -------------------------------------------------------------------------------
 
 type CUInt32       = {#type uint32_t #}
-type SDPFreeFun    = Ptr () -> IO ()
 type SDPFreeFunPtr = {#type sdp_free_func_t #}
 
 withUUIDArray :: UUID -> (Ptr CUInt32 -> IO a) -> IO a
@@ -183,8 +183,8 @@ withUUIDArray uuid = let (w1,w2,w3,w4) = U.toWords uuid
                       in withArray $ map (fromIntegral . byteSwap32) [w1,w2,w3,w4]
 
 {#enum define SDPDataRep {
-    SDP_UINT8  as SDPCUInt8
-  , SDP_UINT16 as SDPCUInt16
+    SDP_UINT8  as SDP_CUInt8
+  , SDP_UINT16 as SDP_CUInt16
   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
 {#enum define SDPConnectFlag {
@@ -204,16 +204,6 @@ data C_SDPSession
 {#pointer *sdp_list_t         as SDPListPtr        -> C_SDPList #}
 {#pointer *sdp_data_t         as SDPDataPtr        -> C_SDPData #}
 {#pointer *sdp_session_t      as SDPSessionPtr     -> C_SDPSession #}
-
-foreign import ccall "wrapper"
-  wrapSDPFreeFun :: SDPFreeFun -> IO SDPFreeFunPtr
-
-withSDPFreeFunPtr :: SDPFreeFun -> (SDPFreeFunPtr -> IO a) -> IO a
-withSDPFreeFunPtr sff f = do
-    sffp <- wrapSDPFreeFun sff
-    res <- f sffp
-    freeHaskellFunPtr sffp
-    return res
 
 {#fun unsafe sdp_uuid128_create as c_sdp_uuid128_create
   {         `UUIDPtr'
@@ -295,7 +285,7 @@ withSDPFreeFunPtr sff f = do
 
 {#fun unsafe sdp_data_free as c_sdp_data_free { `SDPDataPtr' } -> `()' #}
 
-{#fun unsafe sdp_list_free as c_sdp_list_free
+{#fun sdp_list_free as c_sdp_list_free
   {    `SDPListPtr'
   , id `SDPFreeFunPtr'
   } -> `()' #}
