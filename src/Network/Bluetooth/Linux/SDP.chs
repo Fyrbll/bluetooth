@@ -38,13 +38,12 @@ registerSDPService uuid info btProto port = do
         sdpUUID128Create cUuid hUuid = withUUIDArray hUuid $
           throwErrnoIfNull_ "sdp_uuid128_create" . c_sdp_uuid128_create cUuid
     
-    allocaBytes   uuidSize                       $ \rootUuid     ->
-      allocaBytes uuidSize                       $ \l2capUuid    ->
-      allocaBytes uuidSize                       $ \rfcommUuid   ->
-      allocaBytes uuidSize                       $ \svcUuid      ->
-      allocaBytes uuidSize                       $ \svcClassUuid ->
-      allocaBytes {#sizeof sdp_profile_desc_t #} $ \profile      ->
-      allocaBytes {#sizeof sdp_record_t #}       $ \record       -> do
+    allocaBytes   uuidSize                 $ \rootUuid     ->
+      allocaBytes uuidSize                 $ \l2capUuid    ->
+      allocaBytes uuidSize                 $ \rfcommUuid   ->
+      allocaBytes uuidSize                 $ \svcUuid      ->
+      allocaBytes uuidSize                 $ \svcClassUuid ->
+      allocaBytes {#sizeof sdp_record_t #} $ \record       -> do
           -- Convert the UUID to a uuid_t
           sdpUUID128Create svcUuid uuid
           
@@ -105,25 +104,35 @@ registerSDPService uuid info btProto port = do
           throwErrnoIfNegative_ "sdp_set_service_classes" $
             c_sdp_set_service_classes record svcClassList'
           
-          sdpUUID16Create (c_sdp_profile_desc_get_uuid profile) SerialPort
-          {#set sdp_profile_desc_t.version #} profile 0x0100
-          profileList <- sdpListAppend nullPtr profile
+          -- Add UUID profiles
+          profileList <- setFoldM nullPtr (sdpProfiles info)
+              $ \profileList profile -> do
+              profileDesc <- mallocBytes {#sizeof sdp_profile_desc_t #}
+              sdpUUID16Create (c_sdp_profile_desc_get_uuid profileDesc) profile
+              {#set sdp_profile_desc_t.version #} profileDesc 0x0100 -- Magic number
+              sdpListAppend profileList profileDesc
+          
           throwErrnoIfNegative_ "sdp_set_profile_descs" $
             c_sdp_set_profile_descs record profileList
           
+          -- Add service name, provider, and description
           case info of SDPInfo {
               sdpServiceName  = name
             , sdpProviderName = prov
             , sdpDescription  = desc
           } -> c_sdp_set_info_attr record name prov desc
           
+          -- Set the general service ID
           c_sdp_set_service_id record svcUuid
           
+          -- Connect to the local SDP server, register
+          -- the service record, and disconnect
           session <- throwErrnoIfNull "sdp_connect" $
             c_sdp_connect anyAddr localAddr SDPRetryIfBusy
           throwErrnoIfMinus1_ "sdp_record_register" $
             c_sdp_record_register session record 0
           
+          -- Cleanup
           case portData of
                Left psm -> c_sdp_data_free psm
                Right (channel, rfcommList) -> do
@@ -149,6 +158,7 @@ data SDPInfo = SDPInfo {
   , sdpExtraProtocols             :: Set UUIDProtocol
   , sdpServiceClasses             :: Set UUIDServiceClass
   , sdpRegisterUUIDAsServiceClass :: Bool
+  , sdpProfiles                   :: Set UUIDProfile
 } deriving (Read, Ord, Show, Eq)
 
 defaultSDPInfo :: SDPInfo
@@ -159,6 +169,7 @@ defaultSDPInfo = SDPInfo {
   , sdpExtraProtocols             = S.empty
   , sdpServiceClasses             = S.empty
   , sdpRegisterUUIDAsServiceClass = True
+  , sdpProfiles                   = S.empty
 }
 
 -------------------------------------------------------------------------------
