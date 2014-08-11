@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Ryan Scott
 maintainer:          ryan.gl.scott@ku.edu
--- copyright:           
+copyright:           (c) 2014 Ryan Scott
 category:            Network
 build-type:          Simple
 extra-source-files:  README.md, cbits/*.c, include/*.h
