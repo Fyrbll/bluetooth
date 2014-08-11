@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import Network.Bluetooth
@@ -9,7 +8,7 @@ import System.Environment
 import Utils
 
 main :: IO ()
-main = getArgs >>= \case
+main = getArgs >>= \args -> case args of
   [addr, port] -> withSocketsDo $ client (read addr) (read port)
   _            -> putStrLn usage
 
