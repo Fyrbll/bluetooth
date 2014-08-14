@@ -1,7 +1,7 @@
-{-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Network.Bluetooth.Linux.Socket where
 
-import Control.Concurrent.MVar
+import Control.Concurrent
 import Control.Exception
 import Control.Monad
 
@@ -19,6 +19,7 @@ import Network.Bluetooth.Linux.Addr
 import Network.Bluetooth.Linux.Protocol
 import Network.Bluetooth.Utils
 import Network.Socket
+import Network.Socket.Internal
 
 #include <bluetooth/bluetooth.h>
 #include <sys/socket.h>
@@ -31,12 +32,24 @@ bluetoothSocket proto = do
         sockType = case proto of
             L2CAP  -> SeqPacket
             RFCOMM -> Stream
-    fd <- throwErrnoIfMinus1 "socket" $ c_socket family sockType proto
+    fd <- throwSocketErrorIfMinus1Retry "socket" $ c_socket family sockType proto
     status <- newMVar NotConnected
     return $ MkSocket fd family sockType (cFromEnum proto) status
 
 bluetoothBind :: Socket -> BluetoothAddr -> BluetoothPort -> IO ()
-bluetoothBind = assignSocket c_bind "bind"
+bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr portNum =
+    modifyMVar_ sockStatus $ \status -> do
+        when (status /= NotConnected) . ioError . userError $
+          "bind: can't peform bind on socket in status " ++ show status
+        let protoEnum = cToEnum proto
+        unless (isBluetoothPortValid protoEnum portNum) . throwIO $ BluetoothPortException protoEnum portNum
+        case protoEnum of
+             L2CAP  -> callBind $ SockAddrL2CAP AF_BLUETOOTH (c_htobs portNum) bdaddr
+             RFCOMM -> callBind . SockAddrRFCOMM AF_BLUETOOTH bdaddr $ fromIntegral portNum
+        return Bound
+  where
+    callBind :: SockAddrBluetooth a => a -> IO ()
+    callBind sockaddr = throwSocketErrorIfMinus1Retry_ "bind" $ c_bind fd sockaddr
 
 bluetoothBindAnyPort :: Socket -> BluetoothAddr -> IO BluetoothPort
 bluetoothBindAnyPort sock@(MkSocket _ _ _ proto _) bdaddr = do
@@ -45,7 +58,7 @@ bluetoothBindAnyPort sock@(MkSocket _ _ _ proto _) bdaddr = do
     return port
 
 bluetoothListen :: Socket -> Int -> IO ()
-bluetoothListen = listen -- TODO: tweak exception handling
+bluetoothListen = listen
 
 bluetoothAccept :: Socket -> IO (Socket, BluetoothAddr)
 bluetoothAccept sock@(MkSocket _ family sockType proto sockStatus) = do
@@ -59,14 +72,40 @@ bluetoothAccept sock@(MkSocket _ family sockType proto sockStatus) = do
            callAccept sock sockaddrPtr $ sizeOf (undefined :: SockAddrRFCOMM)
   where
     callAccept :: SockAddrBluetooth a => Socket -> Ptr a -> Int -> IO (Socket, BluetoothAddr)
-    callAccept (MkSocket fd _ _ _ _) sockaddrPtr size = do
-          (newFd,_) <- throwErrnoIf ((== -1) . fst) "accept" $ c_accept fd sockaddrPtr size
+    callAccept sock'@(MkSocket fd _ _ _ _) sockaddrPtr size = do
+          newFd <- throwSocketErrorWaitRead sock' "accept" . fmap fst $ c_accept fd sockaddrPtr size
           bdaddr <- fmap sockAddrBluetoothAddr $ peek sockaddrPtr
           newStatus <- newMVar Connected
           return (MkSocket newFd family sockType proto newStatus, bdaddr)
 
 bluetoothConnect :: Socket -> BluetoothAddr -> BluetoothPort -> IO ()
-bluetoothConnect = assignSocket c_connect "connect"
+bluetoothConnect sock@(MkSocket fd _ _ proto sockStatus) bdaddr portNum =
+    modifyMVar_ sockStatus $ \status -> do
+        when (status /= NotConnected) . ioError . userError $
+          "connect: can't peform connect on socket in status " ++ show status
+        let protoEnum = cToEnum proto
+        unless (isBluetoothPortValid protoEnum portNum) . throwIO $ BluetoothPortException protoEnum portNum
+        
+        let connectLoop :: IO ()
+            connectLoop = do
+                r <- case protoEnum of
+                    L2CAP  -> c_connect fd $ SockAddrL2CAP AF_BLUETOOTH (c_htobs portNum) bdaddr
+                    RFCOMM -> c_connect fd . SockAddrRFCOMM AF_BLUETOOTH bdaddr $ fromIntegral portNum
+                when (r == -1) $ do
+                    err <- getErrno
+                    case () of
+                        _ | err == eINTR       -> connectLoop
+                        _ | err == eINPROGRESS -> connectBlocked
+                        _otherwise             -> throwSocketError "connect"
+            
+            connectBlocked :: IO ()
+            connectBlocked = do
+                threadWaitWrite $ fromIntegral fd
+                err <- getSocketOption sock SoError
+                when (err == 0) . throwSocketErrorCode "connect" $ fromIntegral err
+        
+        connectLoop
+        return Connected
 
 bluetoothSocketPort :: Socket -> IO BluetoothPort
 bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
@@ -81,29 +120,10 @@ bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
   where
     callGetSockName :: SockAddrBluetooth a => Socket -> Ptr a -> Int -> IO BluetoothPort
     callGetSockName (MkSocket fd _ _ _ _) sockaddrPtr size = do
-        throwErrnoIf_ ((== -1) . fst) "getsockname" $ c_getsockname fd sockaddrPtr size
+        throwSocketErrorIfMinus1Retry_ "getsockname" . fmap fst $ c_getsockname fd sockaddrPtr size
         fmap sockAddrPort $ peek sockaddrPtr
 
 -------------------------------------------------------------------------------
-
-type SockLen = {#type socklen_t #}
-
-assignSocket :: (forall a. SockAddrBluetooth a => CInt -> a -> IO Int)
-             -> String
-             -> Socket -> BluetoothAddr -> BluetoothPort -> IO ()
-assignSocket c_assigner name (MkSocket fd _ _ proto sockStatus) bdaddr portNum =
-    modifyMVar_ sockStatus $ \status -> do
-        when (status /= NotConnected) . ioError . userError $
-          name ++ ": can't peform " ++ name ++ " on socket in status " ++ show status
-        let protoEnum = cToEnum proto
-        unless (isBluetoothPortValid protoEnum portNum) . throwIO $ BluetoothPortException protoEnum portNum
-        case protoEnum of
-             L2CAP  -> callAssign $ SockAddrL2CAP AF_BLUETOOTH (c_htobs portNum) bdaddr
-             RFCOMM -> callAssign . SockAddrRFCOMM AF_BLUETOOTH bdaddr $ fromIntegral portNum
-        return Bound
-  where
-    callAssign :: SockAddrBluetooth a => a -> IO ()
-    callAssign sockaddr = throwErrnoIfMinus1_ name $ c_assigner fd sockaddr
 
 bindAnyPort :: BluetoothProtocol -> BluetoothAddr -> IO BluetoothPort
 bindAnyPort proto addr = do

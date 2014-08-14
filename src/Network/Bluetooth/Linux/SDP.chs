@@ -22,6 +22,7 @@ import           Network.Bluetooth.Linux.Addr
 import           Network.Bluetooth.Linux.Protocol
 import           Network.Bluetooth.Utils
 import           Network.Bluetooth.UUID
+import           Network.Socket.Internal
 
 #include "wr_bluetooth.h"
 #include "wr_sdp.h"
@@ -31,12 +32,12 @@ registerSDPService :: UUID -> SDPInfo -> BluetoothProtocol -> BluetoothPort -> I
 registerSDPService uuid info btProto port = do
     -- TODO: Check if service is already being advertised
     let uuidSize                     = {#sizeof uuid_t #}
-        sdpUUID16Create uuid'        = throwErrnoIfNull_ "sdp_uuid16_create" . c_sdp_uuid16_create uuid'
-        sdpListAppend list           = throwErrnoIfNull "sdp_list_append" . c_sdp_list_append list
+        sdpUUID16Create uuid'        = throwSocketErrorIfNull_ "sdp_uuid16_create" . c_sdp_uuid16_create uuid'
+        sdpListAppend list           = throwSocketErrorIfNull "sdp_list_append" . c_sdp_list_append list
         sdpListAppend_ list          = void . sdpListAppend list
         setFoldM q s f               = foldM f q $ S.toList s
         sdpUUID128Create cUuid hUuid = withUUIDArray hUuid $
-          throwErrnoIfNull_ "sdp_uuid128_create" . c_sdp_uuid128_create cUuid
+          throwSocketErrorIfNull_ "sdp_uuid128_create" . c_sdp_uuid128_create cUuid
     
     allocaBytes   uuidSize                 $ \rootUuid     ->
       allocaBytes uuidSize                 $ \l2capUuid    ->
@@ -51,7 +52,7 @@ registerSDPService uuid info btProto port = do
           -- Make the record publicly browsable
           sdpUUID16Create rootUuid PublicBrowseGroup
           rootList <- sdpListAppend nullPtr rootUuid
-          throwErrnoIfNegative_ "sdp_set_browse_groups" $
+          throwSocketErrorIfMinus1_ "sdp_set_browse_groups" $
             c_sdp_set_browse_groups record rootList
           
           -- Set L2CAP information (always happens)
@@ -84,7 +85,7 @@ registerSDPService uuid info btProto port = do
                   return (newList : extraProtosList, protoList'')
           
           accessProtoList <- sdpListAppend nullPtr protoList'
-          throwErrnoIfNegative_ "sdp_set_access_protos" $
+          throwSocketErrorIfMinus1_ "sdp_set_access_protos" $
             c_sdp_set_access_protos record accessProtoList
           
           -- Add UUID service classes
@@ -101,7 +102,7 @@ registerSDPService uuid info btProto port = do
                   sdpUUID16Create cUUIDSvcClass hUUIDSvcClass
                   sdpListAppend svcClassList' cUUIDSvcClass
           
-          throwErrnoIfNegative_ "sdp_set_service_classes" $
+          throwSocketErrorIfMinus1_ "sdp_set_service_classes" $
             c_sdp_set_service_classes record svcClassList'
           
           -- Add UUID profiles
@@ -112,7 +113,7 @@ registerSDPService uuid info btProto port = do
                   {#set sdp_profile_desc_t.version #} profileDesc 0x0100 -- Magic number
                   sdpListAppend profileList profileDesc
           
-          throwErrnoIfNegative_ "sdp_set_profile_descs" $
+          throwSocketErrorIfMinus1_ "sdp_set_profile_descs" $
             c_sdp_set_profile_descs record profileList
           
           -- Add service name, provider, and description
@@ -129,7 +130,7 @@ registerSDPService uuid info btProto port = do
           -- the service record, and disconnect
           session <- throwErrnoIfNull "sdp_connect" $
             c_sdp_connect anyAddr localAddr SDPRetryIfBusy
-          throwErrnoIfMinus1_ "sdp_record_register" $
+          throwSocketErrorIfMinus1_ "sdp_record_register" $
             c_sdp_record_register session record 0
           
           -- Cleanup

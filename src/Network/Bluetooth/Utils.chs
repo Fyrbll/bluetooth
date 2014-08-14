@@ -8,9 +8,13 @@ module Network.Bluetooth.Utils
   , setRealToFrac
   , peekFromIntegral
   , peekRealToFrac
-  , throwErrnoIfNegative
-  , throwErrnoIfNegative_
-  , throwErrnoIfNull_
+--   , throwErrnoIfNegative
+--   , throwErrnoIfNegative_
+--   , throwErrnoIfNull_
+  , throwSocketErrorIf
+  , throwSocketErrorIfMinus1Retry_
+  , throwSocketErrorIfNull
+  , throwSocketErrorIfNull_
   , unsafePeek
   , unsafePeekFromIntegral
   , unsafePeekRealToFrac
@@ -28,12 +32,13 @@ module Network.Bluetooth.Utils
 
 import Control.Monad
 
-import Foreign.C.Error
 import Foreign.C.Types hiding (CSize)
 import Foreign.Marshal.Array
 import Foreign.Marshal.Utils
 import Foreign.Ptr
 import Foreign.Storable
+
+import Network.Socket.Internal
 
 import System.IO.Unsafe
 
@@ -68,14 +73,36 @@ peekFromIntegral = fmap fromIntegral . peek
 peekRealToFrac :: (Real a, Storable a, Fractional b) => Ptr a -> IO b
 peekRealToFrac = fmap realToFrac . peek
 
-throwErrnoIfNegative :: (Num a, Ord a) => String -> IO a -> IO a
-throwErrnoIfNegative = throwErrnoIf (< 0)
+-- throwErrnoIfNegative :: (Num a, Ord a) => String -> IO a -> IO a
+-- throwErrnoIfNegative = throwErrnoIf (< 0)
+-- 
+-- throwErrnoIfNegative_ :: (Num a, Ord a) => String -> IO a -> IO ()
+-- throwErrnoIfNegative_ s = void . throwErrnoIfNegative s
+-- 
+-- throwErrnoIfNull_ :: String -> IO (Ptr a) -> IO ()
+-- throwErrnoIfNull_ s = void . throwErrnoIfNull s
 
-throwErrnoIfNegative_ :: (Num a, Ord a) => String -> IO a -> IO ()
-throwErrnoIfNegative_ s = void . throwErrnoIfNegative s
+throwSocketErrorIf :: (a -> Bool) -> String -> IO a -> IO a
+throwSocketErrorIf p name act = do
+    r <- act
+    if p r
+       then throwSocketError name
+       else return r
 
-throwErrnoIfNull_ ::  String -> IO (Ptr a) -> IO ()
-throwErrnoIfNull_ s = void . throwErrnoIfNull s
+throwSocketErrorIfMinus1Retry_ :: (Eq a, Num a) => String -> IO a -> IO ()
+throwSocketErrorIfMinus1Retry_ name = void . throwSocketErrorIfMinus1Retry name
+
+-- throwSocketErrorIfNegative :: (Num a, Ord a) => String -> IO a -> IO a
+-- throwSocketErrorIfNegative = throwSocketErrorIf (< 0)
+-- 
+-- throwSocketErrorIfNegative_ :: (Num a, Ord a) => String -> IO a -> IO ()
+-- throwSocketErrorIfNegative_ name = void . throwSocketErrorIfNegative name
+
+throwSocketErrorIfNull :: String -> IO (Ptr a) -> IO (Ptr a)
+throwSocketErrorIfNull = throwSocketErrorIf (== nullPtr)
+
+throwSocketErrorIfNull_ :: String -> IO (Ptr a) -> IO ()
+throwSocketErrorIfNull_ name = void . throwSocketErrorIfNull name
 
 unsafePeek :: Storable a => Ptr a -> a
 unsafePeek = unsafePerformIO . peek
