@@ -10,7 +10,7 @@ import Utils
 main :: IO ()
 main = getArgs >>= \args -> case args of
   [addr, port] -> withSocketsDo $ client (read addr) (read port)
-  _            -> putStrLn usage
+  _            -> printUsage
 
 client :: BluetoothAddr -> BluetoothPort -> IO ()
 client addr port = do
@@ -33,8 +33,11 @@ client addr port = do
     
     close sock
 
-usage :: String
-usage = unlines
-  [ "usage: bluetooth-example-rfcomm-client-no-sdp <XX:XX:XX:XX:XX:XX> <port>"
+printUsage :: IO ()
+printUsage = getProgName >>= putStrLn . usage
+
+usage :: String -> String
+usage name = unlines
+  [ "usage: " ++ name ++ " <XX:XX:XX:XX:XX:XX> <port>"
   , "       where XX:XX:XX:XX:XX:XX is the remote Bluetooth address to which to connect"
   ]
