@@ -9,8 +9,8 @@ import Utils
 
 main :: IO ()
 main = getArgs >>= \args -> case args of
-  [addr, port] -> withSocketsDo $ client (read addr) (read port)
-  _            -> printUsage
+  addr:port:_ -> withSocketsDo $ client (read addr) (read port)
+  _           -> printUsage
 
 client :: BluetoothAddr -> BluetoothPort -> IO ()
 client addr port = do
