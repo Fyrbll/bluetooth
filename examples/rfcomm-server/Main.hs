@@ -38,17 +38,25 @@ main = withSocketsDo $ do
       
     putStrLn $ "Established connection with address " ++ show connAddr
     
-    message <- commentate ("Calling recv with " ++ show messLen ++ " bytes") $
-      recv connSock messLen
-      
-    putStrLn $ "Received message! [" ++ message ++ "]"
-    let response = reverse message
+    let conversation :: IO ()
+        conversation = do
+            message <- commentate ("Calling recv with " ++ show messLen ++ " bytes") $
+              recv connSock messLen
+            
+            putStrLn $ "Received message! [" ++ message ++ "]"
+            let response = reverse message
+            
+            respBytes <- commentate ("Calling send with response [" ++ response ++ "]") $
+              send connSock response
+            
+            putStrLn $ "Sent response! " ++ show respBytes ++ " bytes."
+            
+            conversation
     
-    respBytes <- commentate ("Calling send with response [" ++ response ++ "]") $
-      send connSock response
+        cleanup :: IO ()
+        cleanup = do
+            close connSock
+            close handshakeSock
+            closeSDPService service
     
-    putStrLn $ "Sent response! " ++ show respBytes ++ " bytes."
-    
-    close connSock
-    close handshakeSock
-    closeSDPService service
+    conversation `onException` cleanup

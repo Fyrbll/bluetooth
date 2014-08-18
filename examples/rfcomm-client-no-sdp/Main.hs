@@ -1,5 +1,7 @@
 module Main where
 
+import Control.Exception
+
 import Network.Bluetooth
 import Network.Socket
 
@@ -21,21 +23,25 @@ client addr port = do
     commentate ("Calling connect on address " ++ show addr ++ " and port " ++ show port)
       $ bluetoothConnect sock addr port
     
-    putStr "Please enter a message to send: "
-    hFlush stdout
-    message <- getLine
+    let conversation :: IO ()
+        conversation = do
+            putStr "Please enter a message to send: "
+            hFlush stdout
+            message <- getLine
+            
+            messBytes <- commentate ("Calling send with message [" ++ message ++ "]") $
+              send sock message
+            
+            putStrLn $ "Sent message! " ++ show messBytes ++ " bytes."
+            
+            response <- commentate ("Calling recv with " ++ show respLen ++ " bytes") $
+              recv sock respLen
+            
+            putStrLn $ "Received response! [" ++ response ++ "]"
+            
+            conversation
     
-    messBytes <- commentate ("Calling send with message [" ++ message ++ "]") $
-      send sock message
-    
-    putStrLn $ "Sent message! " ++ show messBytes ++ " bytes."
-    
-    response <- commentate ("Calling recv with " ++ show respLen ++ " bytes") $
-      recv sock respLen
-    
-    putStrLn $ "Received response! [" ++ response ++ "]"
-    
-    close sock
+    conversation `onException` close sock
 
 printUsage :: IO ()
 printUsage = getProgName >>= putStrLn . usage
