@@ -4,6 +4,7 @@ import Network.Bluetooth
 import Network.Socket
 
 import System.Environment
+import System.IO
 
 import Utils
 
@@ -14,12 +15,15 @@ main = getArgs >>= \args -> case args of
 
 client :: BluetoothAddr -> BluetoothPort -> IO ()
 client addr port = do
-    let message = "Hello, World!"
-        respLen = 4096
+    let respLen = 4096
     
     sock <- commentate "Calling socket" $ bluetoothSocket RFCOMM
     commentate ("Calling connect on address " ++ show addr ++ " and port " ++ show port)
       $ bluetoothConnect sock addr port
+    
+    putStr "Please enter a message to send: "
+    hFlush stdout
+    message <- getLine
     
     messBytes <- commentate ("Calling send with message [" ++ message ++ "]") $
       send sock message
