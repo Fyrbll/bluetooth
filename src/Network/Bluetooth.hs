@@ -12,4 +12,4 @@ import Network.Bluetooth.Exception
 import Network.Bluetooth.Protocol
 import Network.Bluetooth.SDP
 import Network.Bluetooth.Socket
-import Network.Bluetooth.UUID hiding (byteSwap32)
+import Network.Bluetooth.UUID

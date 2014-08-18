@@ -1,5 +1,9 @@
-{-# LANGUAGE NamedFieldPuns #-}
-module Network.Bluetooth.Linux.SDP where
+module Network.Bluetooth.Linux.SDP (
+      registerSDPService
+    , closeSDPService
+    , SDPInfo(..)
+    , defaultSDPInfo
+    ) where
 
 import           Control.Monad
 
@@ -219,11 +223,6 @@ data C_SDPSession
   {    `SDPRecordPtr'
   ,    `UUIDPtr'
   } -> `()' #}
-
-{#fun unsafe sdp_uuid2strn as c_sdp_uuid2strn
-  {    `UUIDPtr'
-  ,    `String'&
-  } -> `Int' #}
 
 {#fun unsafe sdp_uuid16_create as c_sdp_uuid16_create
   `Enum e' =>

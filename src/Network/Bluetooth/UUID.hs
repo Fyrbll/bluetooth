@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MagicHash #-}
+{-# LANGUAGE CPP #-}
 module Network.Bluetooth.UUID (
       ShortUUID
     , fromShortUUID
@@ -14,19 +14,13 @@ module Network.Bluetooth.UUID (
     , UUIDProfile
     ) where
 
-import           Data.Ix
-import           Data.UUID
-import qualified Data.Word as W
-import           Data.Word (Word16, Word32)
+import Data.Ix
+import Data.UUID
+import Data.Word (Word16, Word32)
 
-#if __GLASGOW_HASKELL__ < 708
-import           GHC.Prim
-import           GHC.Word
-#endif
+import Network.Bluetooth.Utils
 
-import           Network.Bluetooth.Utils
-
-import           System.Random
+import System.Random
 
 type ShortUUID = Word16
 
@@ -72,13 +66,6 @@ protocolToUUID = fromShortUUID . cFromEnum
 
 serviceClassToUUID :: UUIDServiceClass -> UUID
 serviceClassToUUID = fromShortUUID . cFromEnum
-
-byteSwap32 :: Word32 -> Word32
-#if __GLASGOW_HASKELL__ >= 708
-byteSwap32 = W.byteSwap32
-#else
-byteSwap32 (W32# w#) = W32# (narrow32Word# (byteSwap32# w#))
-#endif
 
 data UUIDProtocol = SDPProtocol
                   | UDPProtocol

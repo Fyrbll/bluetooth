@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-module Network.Bluetooth.Exception where
+module Network.Bluetooth.Exception (BluetoothException(..)) where
 
 import Control.Exception
 import Data.Typeable

@@ -1,5 +1,9 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Network.Bluetooth.Linux.Protocol where
+module Network.Bluetooth.Linux.Protocol (
+      BluetoothProtocol(..)
+    , BluetoothPort
+    , isBluetoothPortValid
+    ) where
 
 import Data.Ix
 import Data.Word

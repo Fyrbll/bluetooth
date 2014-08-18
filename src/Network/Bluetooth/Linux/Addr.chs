@@ -1,6 +1,15 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Network.Bluetooth.Linux.Addr where
+module Network.Bluetooth.Linux.Addr (
+      BluetoothAddr
+    , fromWords
+    , toWords
+    , anyAddr
+    , localAddr
+    , SockAddrBluetooth(..)
+    , SockAddrL2CAP(..)
+    , SockAddrRFCOMM(..)
+    ) where
 
 import           Control.Applicative
 

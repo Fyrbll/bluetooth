@@ -1,6 +1,7 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE CPP, MagicHash, TupleSections #-}
 module Network.Bluetooth.Utils
-  ( cToEnum
+  ( byteSwap32
+  , cToEnum
   , cFromEnum
   , getFromIntegral
   , getRealToFrac
@@ -8,9 +9,6 @@ module Network.Bluetooth.Utils
   , setRealToFrac
   , peekFromIntegral
   , peekRealToFrac
---   , throwErrnoIfNegative
---   , throwErrnoIfNegative_
---   , throwErrnoIfNull_
   , throwSocketErrorIf
   , throwSocketErrorIfMinus1Retry_
   , throwSocketErrorIfNull
@@ -30,22 +28,37 @@ module Network.Bluetooth.Utils
   , withLenConv
   ) where
 
-import Control.Monad
+import           Control.Monad
 
-import Foreign.C.Types hiding (CSize)
-import Foreign.Marshal.Array
-import Foreign.Marshal.Utils
-import Foreign.Ptr
-import Foreign.Storable
+import qualified Data.Word as W
+import           Data.Word (Word32)
 
-import Network.Socket.Internal
+import           Foreign.C.Types hiding (CSize)
+import           Foreign.Marshal.Array
+import           Foreign.Marshal.Utils
+import           Foreign.Ptr
+import           Foreign.Storable
 
-import System.IO.Unsafe
+#if __GLASGOW_HASKELL__ < 708
+import           GHC.Prim
+import           GHC.Word
+#endif
+
+import           Network.Socket.Internal
+
+import           System.IO.Unsafe
 
 #include <stddef.h>
 
 -- | Remove this when <https://github.com/haskell/c2hs/issues/20 this issue> is resolved
 type CSize = {#type size_t #}
+
+byteSwap32 :: Word32 -> Word32
+#if __GLASGOW_HASKELL__ >= 708
+byteSwap32 = W.byteSwap32
+#else
+byteSwap32 (W32# w#) = W32# (narrow32Word# (byteSwap32# w#))
+#endif
 
 -- TODO: Rename this to something more sensible.
 cToEnum :: (Integral i, Enum e) => i -> e
@@ -73,15 +86,6 @@ peekFromIntegral = fmap fromIntegral . peek
 peekRealToFrac :: (Real a, Storable a, Fractional b) => Ptr a -> IO b
 peekRealToFrac = fmap realToFrac . peek
 
--- throwErrnoIfNegative :: (Num a, Ord a) => String -> IO a -> IO a
--- throwErrnoIfNegative = throwErrnoIf (< 0)
--- 
--- throwErrnoIfNegative_ :: (Num a, Ord a) => String -> IO a -> IO ()
--- throwErrnoIfNegative_ s = void . throwErrnoIfNegative s
--- 
--- throwErrnoIfNull_ :: String -> IO (Ptr a) -> IO ()
--- throwErrnoIfNull_ s = void . throwErrnoIfNull s
-
 throwSocketErrorIf :: (a -> Bool) -> String -> IO a -> IO a
 throwSocketErrorIf p name act = do
     r <- act
@@ -91,12 +95,6 @@ throwSocketErrorIf p name act = do
 
 throwSocketErrorIfMinus1Retry_ :: (Eq a, Num a) => String -> IO a -> IO ()
 throwSocketErrorIfMinus1Retry_ name = void . throwSocketErrorIfMinus1Retry name
-
--- throwSocketErrorIfNegative :: (Num a, Ord a) => String -> IO a -> IO a
--- throwSocketErrorIfNegative = throwSocketErrorIf (< 0)
--- 
--- throwSocketErrorIfNegative_ :: (Num a, Ord a) => String -> IO a -> IO ()
--- throwSocketErrorIfNegative_ name = void . throwSocketErrorIfNegative name
 
 throwSocketErrorIfNull :: String -> IO (Ptr a) -> IO (Ptr a)
 throwSocketErrorIfNull = throwSocketErrorIf (== nullPtr)

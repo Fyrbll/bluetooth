@@ -1,5 +1,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Network.Bluetooth.Linux.Socket where
+module Network.Bluetooth.Linux.Socket (
+      bluetoothSocket
+    , bluetoothBind
+    , bluetoothBindAnyPort
+    , bluetoothListen
+    , bluetoothAccept
+    , bluetoothConnect
+    , bluetoothSocketPort
+    ) where
 
 import Control.Concurrent
 import Control.Exception
@@ -74,7 +82,7 @@ bluetoothAccept sock@(MkSocket _ family sockType proto sockStatus) = do
     callAccept :: SockAddrBluetooth a => Socket -> Ptr a -> Int -> IO (Socket, BluetoothAddr)
     callAccept sock'@(MkSocket fd _ _ _ _) sockaddrPtr size = do
           newFd <- throwSocketErrorWaitRead sock' "accept" . fmap fst $ c_accept fd sockaddrPtr size
-          setNonBlockIfNeeded newFd
+          setNonBlockingFD newFd True
           bdaddr <- fmap sockAddrBluetoothAddr $ peek sockaddrPtr
           newStatus <- newMVar Connected
           return (MkSocket newFd family sockType proto newStatus, bdaddr)
@@ -139,9 +147,6 @@ bindAnyPort proto addr = do
   where
     portRange L2CAP  = [4097, 4099 .. 32767]
     portRange RFCOMM = [1 .. 30]
-
-setNonBlockIfNeeded :: CInt -> IO ()
-setNonBlockIfNeeded = flip setNonBlockingFD True
 
 {#fun unsafe bind as c_bind
   `SockAddrBluetooth a' =>
