@@ -27,14 +27,20 @@ import Network.Socket.Internal
 #include "wr_rfcomm.h"
 
 bluetoothSocket :: BluetoothProtocol -> IO Socket
-bluetoothSocket proto = do
-    let family   = AF_BLUETOOTH
-        sockType = case proto of
-            L2CAP  -> SeqPacket
-            RFCOMM -> Stream
-    fd <- throwSocketErrorIfMinus1Retry "socket" $ c_socket family sockType proto
-    status <- newMVar NotConnected
-    return $ MkSocket fd family sockType (cFromEnum proto) status
+bluetoothSocket proto = socket AF_BLUETOOTH sockType protoNum
+  where
+    sockType = case proto of
+        L2CAP  -> SeqPacket
+        RFCOMM -> Stream
+    protoNum = cFromEnum proto
+-- bluetoothSocket proto = do
+--     let family   = AF_BLUETOOTH
+--         sockType = case proto of
+--             L2CAP  -> SeqPacket
+--             RFCOMM -> Stream
+--     fd <- throwSocketErrorIfMinus1Retry "socket" $ c_socket family sockType proto
+--     status <- newMVar NotConnected
+--     return $ MkSocket fd family sockType (cFromEnum proto) status
 
 bluetoothBind :: Socket -> BluetoothAddr -> BluetoothPort -> IO ()
 bluetoothBind (MkSocket fd _ _ proto sockStatus) bdaddr portNum =
@@ -104,8 +110,12 @@ bluetoothConnect sock@(MkSocket fd _ _ proto sockStatus) bdaddr portNum =
                 err <- getSocketOption sock SoError
                 when (err == 0) . throwSocketErrorCode "connect" $ fromIntegral err
         
-        connectLoop
-        return Connected
+            attemptConnection :: IO SocketStatus
+            attemptConnection = do
+                connectLoop
+                return Connected
+        
+        attemptConnection `onException` close sock
 
 bluetoothSocketPort :: Socket -> IO BluetoothPort
 bluetoothSocketPort sock@(MkSocket _ _ _ proto status) = do
@@ -139,11 +149,11 @@ bindAnyPort proto addr = do
     portRange L2CAP  = [4097, 4099 .. 32767]
     portRange RFCOMM = [1 .. 30]
 
-{#fun unsafe socket as c_socket
-  { packFamily     `Family'
-  , packSocketType `SocketType'
-  , cFromEnum      `BluetoothProtocol'
-  }             -> `CInt' id #}
+-- {#fun unsafe socket as c_socket
+--   { packFamily     `Family'
+--   , packSocketType `SocketType'
+--   , cFromEnum      `BluetoothProtocol'
+--   }             -> `CInt' id #}
 
 {#fun unsafe bind as c_bind
   `SockAddrBluetooth a' =>

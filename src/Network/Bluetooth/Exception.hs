@@ -9,7 +9,7 @@ data BluetoothException = BluetoothPortException BluetoothProtocol BluetoothPort
   deriving Typeable
 
 instance Show BluetoothException where
-    show (BluetoothPortException L2CAP  port) = "L2CAP port " ++ show port ++ " is not an odd number between 4,097 and 32,767."
-    show (BluetoothPortException RFCOMM port) = "RFCOMM port " ++ show port ++ " is not between 1 and 30."
+    showsPrec _ (BluetoothPortException L2CAP  port) = showString "L2CAP port " . shows port . showString " is not an odd number between 4,097 and 32,767."
+    showsPrec _ (BluetoothPortException RFCOMM port) = showString "RFCOMM port " . shows port . showString " is not between 1 and 30."
 
 instance Exception BluetoothException
