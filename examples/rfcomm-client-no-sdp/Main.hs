@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Exception
+import Control.Monad
 
 import Network.Bluetooth
 import Network.Socket
@@ -28,6 +29,10 @@ client addr port = do
             putStr "\nPlease enter a message to send: "
             hFlush stdout
             message <- getLine
+            
+            when (null message) $ do
+                putStrLn "Message must be non-empty."
+                conversation
             
             messBytes <- commentate ("Calling send with message [" ++ message ++ "]") $
               send sock message
