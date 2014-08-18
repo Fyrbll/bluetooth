@@ -25,7 +25,7 @@ client addr port = do
     
     let conversation :: IO ()
         conversation = do
-            putStr "Please enter a message to send: "
+            putStr "\nPlease enter a message to send: "
             hFlush stdout
             message <- getLine
             

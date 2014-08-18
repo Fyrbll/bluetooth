@@ -40,7 +40,7 @@ main = withSocketsDo $ do
     
     let conversation :: IO ()
         conversation = do
-            message <- commentate ("Calling recv with " ++ show messLen ++ " bytes") $
+            message <- commentate ("\nCalling recv with " ++ show messLen ++ " bytes") $
               recv connSock messLen
             
             putStrLn $ "Received message! [" ++ message ++ "]"
