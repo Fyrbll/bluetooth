@@ -60,6 +60,7 @@ library
   if os(linux)
     c-sources:         cbits/wr_bluetooth.c
                      , cbits/wr_hci.c
+                     , cbits/wr_ioctl.c
                      , cbits/wr_l2cap.c
                      , cbits/wr_rfcomm.c
                      , cbits/wr_sdp.c
@@ -67,12 +68,14 @@ library
     pkgconfig-depends: bluez
     includes:          wr_bluetooth.h
                      , wr_hci.h
+                     , wr_ioctl.h
                      , wr_l2cap.h
                      , wr_rfcomm.h
                      , wr_sdp.h
                      , wr_sdp_lib.h
     install-includes:  wr_bluetooth.h
                      , wr_hci.h
+                     , wr_ioctl.h
                      , wr_l2cap.h
                      , wr_rfcomm.h
                      , wr_sdp.h

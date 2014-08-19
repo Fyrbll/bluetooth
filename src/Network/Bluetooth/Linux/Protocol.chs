@@ -18,5 +18,5 @@ import Data.Word
 type BluetoothPort = Word16
 
 isBluetoothPortValid :: BluetoothProtocol -> BluetoothPort -> Bool
-isBluetoothPortValid RFCOMM port = 1 <= port && port <= 30
-isBluetoothPortValid L2CAP  port = odd port && 4097 <= port && port <= 32767
+isBluetoothPortValid RFCOMM port = inRange (1, 30) port
+isBluetoothPortValid L2CAP  port = odd port && inRange (4097, 32767) port

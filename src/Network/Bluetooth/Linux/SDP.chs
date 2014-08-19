@@ -188,12 +188,45 @@ withUUIDArray uuid = let (w1,w2,w3,w4) = U.toWords uuid
                       in withArray $ map (fromIntegral . byteSwap32) [w1,w2,w3,w4]
 
 {#enum define SDPDataRep {
-    SDP_UINT8  as SDP_CUInt8
-  , SDP_UINT16 as SDP_CUInt16
+    SDP_DATA_NIL        as SDPDataNil
+  , SDP_UINT8           as SDP_CUInt8
+  , SDP_UINT16          as SDP_CUInt16
+  , SDP_UINT32          as SDP_CUInt32
+  , SDP_UINT64          as SDP_CUInt64
+  , SDP_UINT128         as SDP_CUInt128
+  , SDP_INT8            as SDP_CInt8
+  , SDP_INT16           as SDP_CInt16
+  , SDP_INT32           as SDP_CInt32
+  , SDP_INT64           as SDP_CInt64
+  , SDP_INT128          as SDP_CInt128
+  , SDP_UUID_UNSPEC     as SDP_UUIDUnspec
+  , SDP_UUID16          as SDP_UUID16
+  , SDP_UUID32          as SDP_UUID32
+  , SDP_UUID128         as SDP_UUID128
+  , SDP_TEXT_STR_UNSPEC as SDPTextStrUnspec
+  , SDP_TEXT_STR8       as SDPTextStr8
+  , SDP_TEXT_STR16      as SDPTextStr16
+  , SDP_TEXT_STR32      as SDPTextStr32
+  , SDP_BOOL            as SDPBool
+  , SDP_SEQ_UNSPEC      as SDPSeqUnspec
+  , SDP_SEQ8            as SDPSeq8
+  , SDP_SEQ16           as SDPSeq16
+  , SDP_SEQ32           as SDPSeq32
+  , SDP_ALT_UNSPEC      as SDPAltUnspec
+  , SDP_ALT8            as SDPAlt8
+  , SDP_ALT16           as SDPAlt16
+  , SDP_ALT32           as SDPAlt32
+  , SDP_URL_STR_UNSPEC  as SDP_URLStrUnspec
+  , SDP_URL_STR8        as SDP_URLStr8
+  , SDP_URL_STR16       as SDP_URLStr16
+  , SDP_URL_STR32       as SDP_URLStr32
   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
 {#enum define SDPConnectFlag {
     SDP_RETRY_IF_BUSY as SDPRetryIfBusy
+  , SDP_WAIT_ON_CLOSE as SDPWaitOnClose
+  , SDP_NON_BLOCKING  as SDPNonBlocking
+  , SDP_LARGE_MTU     as SDPLargeMTU
   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
 data C_UUID

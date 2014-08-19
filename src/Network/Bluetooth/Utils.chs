@@ -25,6 +25,7 @@ module Network.Bluetooth.Utils
   , withCastArrayLen0
   , withCastLen
   , withCastLenConv
+  , withFunWrapper
   , withLen
   , withLenConv
   ) where
@@ -144,6 +145,13 @@ withCastLen val f = withLen val $ f . mapFst castPtr
 
 withCastLenConv :: (Num n, Storable s1) => s1 -> ((Ptr s2, n) -> IO a) -> IO a
 withCastLenConv val f = withCastLen val $ f . mapSnd fromIntegral
+
+withFunWrapper :: (a -> IO (FunPtr a)) -> a -> (FunPtr a -> IO b) -> IO b
+withFunWrapper wrapper hFun f = do
+    funPtr <- wrapper hFun
+    res <- f funPtr
+    freeHaskellFunPtr funPtr
+    return res
 
 withLen :: Storable a => a -> ((Ptr a, CSize) -> IO b) -> IO b
 withLen val f = with val $ f . (, fromIntegral $ sizeOf val)

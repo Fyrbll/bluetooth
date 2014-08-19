@@ -1,6 +1,7 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include "wr_bluetooth.h"
 #include "wr_hci.h"
 
@@ -19,4 +20,8 @@ char *wr_hci_dev_info_get_name(char *dst, const hci_dev_info_t *const src) {
 void wr_hci_dev_info_set_name(hci_dev_info_t *di, const char *const name) {
     memset(di->name, 0, 8);
     strcpy(di->name, name);
+}
+
+int wr_hci_get_dev_info() {
+    return HCIGETDEVINFO;
 }
