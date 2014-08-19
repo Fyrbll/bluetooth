@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP, MagicHash, TupleSections #-}
 module Network.Bluetooth.Utils
-  ( byteSwap32
+  ( allocaLen
+  , byteSwap32
   , cToEnum
   , cFromEnum
   , getFromIntegral
@@ -34,6 +35,7 @@ import qualified Data.Word as W
 import           Data.Word (Word32)
 
 import           Foreign.C.Types hiding (CSize)
+import           Foreign.Marshal.Alloc
 import           Foreign.Marshal.Array
 import           Foreign.Marshal.Utils
 import           Foreign.Ptr
@@ -52,6 +54,12 @@ import           System.IO.Unsafe
 
 -- | Remove this when <https://github.com/haskell/c2hs/issues/20 this issue> is resolved
 type CSize = {#type size_t #}
+
+allocaLen :: Storable a => (Int -> Ptr a -> IO b) -> IO b
+allocaLen = doAllocaLen undefined
+  where
+    doAllocaLen :: Storable a => a -> (Int -> Ptr a -> IO b) -> IO b
+    doAllocaLen dummy f = alloca . f $ sizeOf dummy
 
 byteSwap32 :: Word32 -> Word32
 #if __GLASGOW_HASKELL__ >= 708

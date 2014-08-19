@@ -20,9 +20,9 @@ client :: BluetoothAddr -> BluetoothPort -> IO ()
 client addr port = do
     let respLen = 4096
     
-    sock <- commentate "Calling socket" $ bluetoothSocket RFCOMM
+    sock <- commentate "Calling socket" $ btSocket RFCOMM
     commentate ("Calling connect on address " ++ show addr ++ " and port " ++ show port)
-      $ bluetoothConnect sock addr port
+      $ btConnect sock addr port
     
     let conversation :: IO ()
         conversation = do

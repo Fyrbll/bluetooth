@@ -209,6 +209,7 @@ data C_SDPSession
 {#pointer *sdp_list_t         as SDPListPtr        -> C_SDPList #}
 {#pointer *sdp_data_t         as SDPDataPtr        -> C_SDPData #}
 {#pointer *sdp_session_t      as SDPSessionPtr     -> C_SDPSession #}
+{#pointer *wr_bdaddr_t        as BluetoothAddrPtr  -> BluetoothAddr #}
 
 {#fun unsafe sdp_uuid128_create as c_sdp_uuid128_create
   {         `UUIDPtr'
@@ -272,8 +273,8 @@ data C_SDPSession
 
 {#fun unsafe wr_sdp_connect as c_sdp_connect
   `Enum e' =>
-  { withCast* `BluetoothAddr'
-  , withCast* `BluetoothAddr'
+  { with'*    `BluetoothAddr'
+  , with'*    `BluetoothAddr'
   , cFromEnum `e'
   }        -> `SDPSessionPtr' #}
 

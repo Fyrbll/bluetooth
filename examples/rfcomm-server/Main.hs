@@ -22,19 +22,19 @@ main = withSocketsDo $ do
           , sdpProfiles       = singleton SerialPort
         }
         messLen  = 4096
-    handshakeSock <- commentate "Calling socket" $ bluetoothSocket proto
-    btPort <- commentate "Calling bind" $ bluetoothBindAnyPort handshakeSock anyAddr
+    handshakeSock <- commentate "Calling socket" $ btSocket proto
+    btPort <- commentate "Calling bind" $ btBindAnyPort handshakeSock anyAddr
     
     putStrLn $ "Bound on port " ++ show btPort
-    btPort2 <- bluetoothSocketPort handshakeSock
-    return $ assert (btPort == btPort2) ()
+    (btAddr, _) <- btSocketInfo handshakeSock
+    print btAddr
     
     commentate ("Calling listen with backlog " ++ show backlog) $
-      bluetoothListen handshakeSock backlog
+      btListen handshakeSock backlog
     service <- commentate ("Registering SDP service " ++ show uuid) $
       registerSDPService uuid settings proto btPort
     (connSock, connAddr) <- commentate "Calling accept" $
-      bluetoothAccept handshakeSock
+      btAccept handshakeSock
       
     putStrLn $ "Established connection with address " ++ show connAddr
     

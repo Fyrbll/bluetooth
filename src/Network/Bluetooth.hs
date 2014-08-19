@@ -1,5 +1,6 @@
 module Network.Bluetooth (
       module Network.Bluetooth.Addr
+    , module Network.Bluetooth.Device
     , module Network.Bluetooth.Exception
     , module Network.Bluetooth.Protocol
     , module Network.Bluetooth.SDP
@@ -8,6 +9,7 @@ module Network.Bluetooth (
     ) where
 
 import Network.Bluetooth.Addr
+import Network.Bluetooth.Device
 import Network.Bluetooth.Exception
 import Network.Bluetooth.Protocol
 import Network.Bluetooth.SDP

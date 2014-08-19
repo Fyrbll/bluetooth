@@ -28,6 +28,7 @@ library
     other-modules:
   if os(linux)
     other-modules:     Network.Bluetooth.Linux.Addr
+                       Network.Bluetooth.Linux.Device
                        Network.Bluetooth.Linux.Protocol
                        Network.Bluetooth.Linux.SDP
                        Network.Bluetooth.Linux.Socket
@@ -58,17 +59,20 @@ library
     c-sources:
   if os(linux)
     c-sources:         cbits/wr_bluetooth.c
+                     , cbits/wr_hci.c
                      , cbits/wr_l2cap.c
                      , cbits/wr_rfcomm.c
                      , cbits/wr_sdp.c
                      , cbits/wr_sdp_lib.c
     pkgconfig-depends: bluez
     includes:          wr_bluetooth.h
+                     , wr_hci.h
                      , wr_l2cap.h
                      , wr_rfcomm.h
                      , wr_sdp.h
                      , wr_sdp_lib.h
     install-includes:  wr_bluetooth.h
+                     , wr_hci.h
                      , wr_l2cap.h
                      , wr_rfcomm.h
                      , wr_sdp.h

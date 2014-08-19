@@ -3,6 +3,7 @@
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
+#include "wr_bluetooth.h"
 
 typedef struct sockaddr_rc sockaddr_rc_t;
 
