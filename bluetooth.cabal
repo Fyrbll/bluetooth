@@ -32,6 +32,7 @@ library
                        Network.Bluetooth.Linux.Protocol
                        Network.Bluetooth.Linux.SDP
                        Network.Bluetooth.Linux.Socket
+                       Network.Bluetooth.Linux.UUID
   if os(freebsd)
     other-modules:
   build-depends:       base >= 3 && < 5

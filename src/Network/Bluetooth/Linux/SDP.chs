@@ -226,7 +226,6 @@ withUUIDArray uuid = let (w1,w2,w3,w4) = U.toWords uuid
     SDP_RETRY_IF_BUSY as SDPRetryIfBusy
   , SDP_WAIT_ON_CLOSE as SDPWaitOnClose
   , SDP_NON_BLOCKING  as SDPNonBlocking
-  , SDP_LARGE_MTU     as SDPLargeMTU
   } deriving (Ix, Show, Eq, Read, Ord, Bounded) #}
 
 data C_UUID
