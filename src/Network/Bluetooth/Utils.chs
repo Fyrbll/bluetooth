@@ -11,7 +11,6 @@ module Network.Bluetooth.Utils
   , peekFromIntegral
   , peekRealToFrac
   , throwSocketErrorIf
-  , throwSocketErrorIfMinus1Retry_
   , throwSocketErrorIfNull
   , throwSocketErrorIfNull_
   , unsafePeek
@@ -101,9 +100,6 @@ throwSocketErrorIf p name act = do
     if p r
        then throwSocketError name
        else return r
-
-throwSocketErrorIfMinus1Retry_ :: (Eq a, Num a) => String -> IO a -> IO ()
-throwSocketErrorIfMinus1Retry_ name = void . throwSocketErrorIfMinus1Retry name
 
 throwSocketErrorIfNull :: String -> IO (Ptr a) -> IO (Ptr a)
 throwSocketErrorIfNull = throwSocketErrorIf (== nullPtr)
